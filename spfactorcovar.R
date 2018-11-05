@@ -37,8 +37,8 @@ library(profvis)
 profvis({
   for(g in 1:rep) {
     
-    cat("start replicate",g)
-    cat("--------------------")
+    cat("start replicate",g, "\n")
+    cat("--------------------\n")
     
     # ------read data--------#
     Y = dat[(g-1)*n + 1:(g*n),]               # n x p data matrix ; scale the training data
@@ -204,8 +204,8 @@ profvis({
     #w. evolution of factors
     nofrep[g,] = t(nof1out)
     
-    cat("end replicate",g)
-    cat("--------------------")
+    cat("end replicate",g, "\n")
+    cat("--------------------\n")
     
     
     
