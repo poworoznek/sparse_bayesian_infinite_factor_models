@@ -7,7 +7,7 @@
 rm(list = ls())
 
 library(R.matlab)
-list2env(readMat("datagenp_30ktr_5rep_1.mat"), envir = .GlobalEnv)
+list2env(readMat("~/documents/factorR/datagenp_30ktr_5rep_1.mat"), envir = .GlobalEnv)
 p = as.numeric(p)
 n = as.numeric(n)
 
@@ -33,8 +33,8 @@ mse1rep = matrix(0,nrow = rep,ncol = 3)                         # same as above 
 nofrep = matrix(0,nrow = rep,ncol = sp)                         # evolution of factors across replicates
 adrep = matrix(0,nrow = rep,ncol = 1)                           # number of adaptations across replicates
 
-library(profvis)
-profvis({
+#library(profvis)
+#profvis({
   for(g in 1:rep) {
     
     cat("start replicate",g, "\n")
@@ -211,4 +211,4 @@ profvis({
     
   }
   
-})
+#})
