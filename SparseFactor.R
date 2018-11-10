@@ -19,19 +19,6 @@ fact = function(Y, b0, b1, as, bs, df, ad1, bd1 = 1, ad2, bd2 = 1, adf, bdf,
   
   p = ncol(Y)
   n = nrow(Y)
-  
-  # Explicit hyperparameter specification
-  b0 = hypers[1]
-  b1 = hypers[2]
-  as = hypers[3]
-  bs = hypers[4]
-  df = hypers[5]
-  ad1 = hypers[6] 
-  bd1 = hypers[7]
-  ad2 = hypers[8]
-  bd2 = hypers[9]
-  adf = hypers[10]
-  bdf = hypers[11]
 
   if(is.null(kinit)) kinit = floor(log(p)*3)
   
