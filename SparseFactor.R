@@ -1,5 +1,6 @@
 # Gibbs sampler for covariance estimation
 # using mgps prior on factor loadings
+# prior edits informed by Durante 2017
 
 # ARGUMENTS: Y: Data matrix (n x p); 
 #            prop: proportion of elements in each column less than epsilon in magnitude cutoff;
@@ -10,8 +11,6 @@
 #            thin: thinning interval;
 #            kinit: initial value for the number of factors;
 #            output: output type, a vector including some of c("covMean", "covSamples", "factSamples", "numFactors")
-
-# NOTE: The note on the multiplicative gamma process (Durante 2017) 
 
 fact = function(Y, b0, b1, as, bs, df, ad1, bd1 = 1, ad2, bd2 = 1, adf, bdf, 
                 prop = 1, epsilon = 1e-3, nrun, burn, thin = 1, 
@@ -36,7 +35,7 @@ fact = function(Y, b0, b1, as, bs, df, ad1, bd1 = 1, ad2, bd2 = 1, adf, bdf,
   Lambda = matrix(1, nrow = p, ncol = k)
   ta = matrix(rnorm(n*k), nrow = n, ncol = k)    # factor loadings & latent factors
   meta = matrix(0,nrow = n, ncol = k)
-  veta = diag(k)                                 # latent factor distribution = standrad normal
+  veta = diag(k)                                 # latent factor distribution = standard normal
   
   psijh = matrix(rgamma(p*k, df/2, df/2), nrow = p, ncol = k)     # local shrinkage coefficients
   theta = c(1 / rgamma(1,ad1,bd1), 1 / rgamma(k-1,ad2,bd2))       # gobal shrinkage coefficients multilpliers
@@ -46,7 +45,7 @@ fact = function(Y, b0, b1, as, bs, df, ad1, bd1 = 1, ad2, bd2 = 1, adf, bdf,
   # --- Allocate output object memory --- #
   if(any(output %in% "covMean")) COVMEAN = matrix(0, nrow = p, ncol = p)
   if(any(output %in% "covSamples")) OMEGA = array(dim = c(p, p, sp))
-  if(any(output %in% "factSamples")) LAMBDA = array(dim = c(p, k, sp))
+  if(any(output %in% "factSamples")) LAMBDA = list()
   if(any(output %in% "numFactors")) K = rep(NA, sp)
   ind = 1
   
@@ -74,7 +73,6 @@ fact = function(Y, b0, b1, as, bs, df, ad1, bd1 = 1, ad2, bd2 = 1, adf, bdf,
     # -- update Lambda (rue & held) -- #
     eta2 = t(eta) %*% eta
     
-    ### translate to mclapply() or openCL after profvis ???
     for(j in 1:p) {
       Qlam = diag(Plam[j,]) + ps[j]*eta2
       blam = ps[j]*(t(eta) %*% Y[,j])
@@ -87,8 +85,7 @@ fact = function(Y, b0, b1, as, bs, df, ad1, bd1 = 1, ad2, bd2 = 1, adf, bdf,
     }
     
     #------Update psi_{jh}'s------#
-    psijh = matrix(nrow = p, ncol = k,
-                   data = rgamma(p*k,df/2 + 0.5,df/2 + t(t(Lambda)^2 * (tauh))))
+    psijh = matrix(rgamma(p*k,df/2 + 0.5,df/2 + t(t(Lambda)^2 * (tauh))), nrow = p, ncol = k)
     
     #------Update theta & tauh------#
     mat = psijh * Lambda^2
@@ -147,7 +144,7 @@ fact = function(Y, b0, b1, as, bs, df, ad1, bd1 = 1, ad2, bd2 = 1, adf, bdf,
       Omega = (Lambda %*% t(Lambda) + Sigma) * scaleMat
       if(any(output %in% "covMean")) COVMEAN = COVMEAN + Omega / sp
       if(any(output %in% "covSamples")) OMEGA[,,ind] = Omega
-      if(any(output %in% "factSamples")) LAMBDA[,,ind] = Lambda
+      if(any(output %in% "factSamples")) LAMBDA[[ind]] = Lambda
       if(any(output %in% "numFactors")) K[ind] = k
       ind = ind + 1
     }
