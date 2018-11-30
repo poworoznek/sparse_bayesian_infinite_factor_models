@@ -12,12 +12,14 @@
 #            kinit: initial value for the number of factors;
 #            output: output type, a vector including some of c("covMean", "covSamples", "factSamples", "numFactors")
 
-fact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1, 
-                kinit = NULL, output = "covMean"){
+fact2 = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1, 
+                kinit = NULL, output = "covMean", context = 3L){
+
+#  setContext(id = context)
   
   p = ncol(Y)
   n = nrow(Y)
-
+  
   as = 1                          # gamma hyperparameters for residual precision
   bs = 0.3                        
   df = 3                                    # gamma hyperparameters for t_{ij}
@@ -68,8 +70,8 @@ fact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     
     # -- Update eta -- #
     Lmsg = Lambda * ps
-    Veta1 = diag(k) + t(Lmsg) %*% Lambda
-    eigs = eigen(Veta1)
+    Veta1 = diag(k) + crossprod(Lmsg, Lambda)
+    eigs = eigen(Veta1, symmetric = T)
     if(all(eigs$values > 1e-6)) {
       Tmat = sqrt(eigs$values) * t(eigs$vectors)
     } else {
@@ -77,22 +79,19 @@ fact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     }
     R = qr.R(qr(Tmat))
     S = solve(R)
-    Veta = S %*% t(S)                                               # Veta = inv(Veta1)
-    Meta = Y %*% Lmsg %*% Veta                                      # n x k 
-    eta = Meta + matrix(rnorm(n*k), nrow = n, ncol = k) %*% t(S)    # update eta in a block
+    Veta = tcrossprod(S)                                               # Veta = inv(Veta1)
+    eta =  Y %*% Lmsg %*% Veta  + tcrossprod(matrix(rnorm(n*k), nrow = n, ncol = k), S)    # update eta in a block
     
     # -- update Lambda (rue & held) -- #
-    eta2 = t(eta) %*% eta
+    eta2 = crossprod(eta)
+    
+    zlams = rnorm(k*p)
     
     for(j in 1:p) {
-      Qlam = diag(Plam[j,]) + ps[j]*eta2
-      blam = ps[j]*(t(eta) %*% Y[,j])
-      Llam = t(chol(Qlam))
-      zlam = rnorm(k)
-      vlam = solve(Llam,blam)
-      mlam = solve(t(Llam),vlam)
-      ylam = solve(t(Llam),zlam)
-      Lambda[j,] = t(ylam + mlam)
+      Llamt = chol(diag(Plam[j,]) + ps[j]*eta2)
+      Lambda[j,] = t(solve(Llamt,zlams[1:k + (j-1)*k]) + 
+                       solve(Llamt,
+                             solve(t(Llamt), ps[j] * crossprod(eta, Y[,j]))))
     }
     
     #------Update psi_{jh}'s------#
@@ -114,7 +113,7 @@ fact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     }
     
     # -- Update Sigma -- #
-    Ytil = Y - eta %*% t(Lambda) 
+    Ytil = Y - tcrossprod(eta, Lambda)
     ps= rgamma(p, as + 0.5*n, bs+0.5*colSums(Ytil^2))
     Sigma=diag(1/ps)
     
@@ -152,7 +151,7 @@ fact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     
     # -- save sampled values (after thinning) -- #
     if((i %% thin == 0) & (i > burn)) {
-      Omega = (Lambda %*% t(Lambda) + Sigma) * scaleMat
+      Omega = (tcrossprod(Lambda) + Sigma) * scaleMat
       if(any(output %in% "covMean")) COVMEAN = COVMEAN + Omega / sp
       if(any(output %in% "covSamples")) OMEGA[,,ind] = Omega
       if(any(output %in% "factSamples")) LAMBDA[[ind]] = Lambda
@@ -173,4 +172,3 @@ fact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
   names(out) = output
   return(out)
 }
-

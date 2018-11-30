@@ -3,33 +3,22 @@
 # prior edits informed by Durante 2017
 
 # ARGUMENTS: Y: Data matrix (n x p); 
-#            b0, b1, as, bs, df, ad1, bd1, ad2, bd2, adf, bdf: hyperparameters;
 #            prop: proportion of elements in each column less than epsilon in magnitude cutoff;
 #            epsilon: tolerance;
+#            b0, b1, as, bs, df, ad1, bd1, ad2, bd2, adf, bdf: hyperparameters;
 #            nrun: number of iterations;
 #            burn: burn-in period;
 #            thin: thinning interval;
 #            kinit: initial value for the number of factors;
 #            output: output type, a vector including some of c("covMean", "covSamples", "factSamples", "numFactors")
 
-fact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1, 
+fact = function(Y, b0, b1, as, bs, df, ad1, bd1 = 1, ad2, bd2 = 1, adf, bdf, 
+                prop = 1, epsilon = 1e-3, nrun, burn, thin = 1, 
                 kinit = NULL, output = "covMean"){
   
   p = ncol(Y)
   n = nrow(Y)
 
-  as = 1                          # gamma hyperparameters for residual precision
-  bs = 0.3                        
-  df = 3                                    # gamma hyperparameters for t_{ij}
-  ad1 = 2.1
-  bd1 = 1                         # gamma hyperparameters for delta_1
-  ad2 = 3.1
-  bd2 = 1                         # gamma hyperparameters delta_h, h >= 2
-  adf = 1
-  bdf = 1 
-  b0 = 1
-  b1 = 0.0005
-  
   if(is.null(kinit)) kinit = floor(log(p)*3)
   
   sp = floor((nrun - burn)/thin)        # number of posterior samples
@@ -108,7 +97,8 @@ fact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     
     for(h in 2:k) {
       ad = ad2 + 0.5*p*(k-h+1)
-      bd = bd2 * theta[h-1] + 0.5 * theta[h] * sum(tauh[h:k]*colSums(mat[,h:k, drop = F]))
+      bd = bd2 * theta[h-1] + 0.5 * theta[h] * sum(tauh[h:k]*colSums(mat[,h:k, drop = F])) # WHY IS THE THETA[h-1] TERM IN THERE?
+      # bd = bd2 + 0.5 * theta[h] * sum(tauh[h:k]*colSums(mat[,h:k, drop = F]))
       theta[h] = 1 / rgamma(1,ad,bd)
       tauh = 1 / cumprod(theta)
     }
@@ -173,4 +163,3 @@ fact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
   names(out) = output
   return(out)
 }
-
