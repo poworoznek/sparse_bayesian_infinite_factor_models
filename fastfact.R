@@ -44,7 +44,7 @@ fact2 = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
   
   # --- Initial values --- #
   ps = rgamma(p, as, bs)
-  Sigma=diag(1/ps)                               # Sigma = diagonal residual covariance
+  Sigma = diag(1/ps)                               # Sigma = diagonal residual covariance
   Lambda = matrix(1, nrow = p, ncol = k)
   ta = matrix(rnorm(n*k), nrow = n, ncol = k)    # factor loadings & latent factors
   meta = matrix(0,nrow = n, ncol = k)
@@ -70,8 +70,8 @@ fact2 = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     
     # -- Update eta -- #
     Lmsg = Lambda * ps
-    Veta1 = diag(k) + crossprod(Lmsg, Lambda)
-    eigs = eigen(Veta1, symmetric = T)
+    Veta1 = diag(k) + t(Lmsg) %*% Lambda
+    eigs = eigen(Veta1, symmetric = TRUE)
     if(! all(eigs$values > 1e-6)) {
       Tmat = sqrt(eigs$values) * t(eigs$vectors)
     } else {
@@ -79,11 +79,12 @@ fact2 = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     }
     R = qr.R(qr(Tmat))
     S = solve(R)
-    Veta = tcrossprod(S)                                               # Veta = inv(Veta1)
-    eta =  Y %*% Lmsg %*% Veta  + tcrossprod(matrix(rnorm(n*k), nrow = n, ncol = k), S)    # update eta in a block
+    Veta = S %*% t(S)                                               # Veta = inv(Veta1)
+    Meta = Y %*% Lmsg %*% Veta                                      # n x k 
+    eta = Meta + matrix(rnorm(n*k), nrow = n, ncol = k) %*% t(S)    # update eta in a block
     
     # -- update Lambda (rue & held) -- #
-    eta2 = crossprod(eta)
+    eta2 = t(eta) %*% eta
     
     zlams = rnorm(k*p)
     
