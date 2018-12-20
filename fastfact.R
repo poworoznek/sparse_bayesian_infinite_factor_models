@@ -92,7 +92,7 @@ fact2 = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
       Llamt = chol(diag(Plam[j,]) + ps[j]*eta2)
       Lambda[j,] = t(solve(Llamt,zlams[1:k + (j-1)*k]) + 
                        solve(Llamt,
-                             solve(t(Llamt), ps[j] * crossprod(eta, Y[,j]))))
+                             solve(t(Llamt), ps[j] * t(eta) %*% Y[,j])))
     }
     
     #------Update psi_{jh}'s------#
@@ -114,7 +114,7 @@ fact2 = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     }
     
     # -- Update Sigma -- #
-    Ytil = Y - tcrossprod(eta, Lambda)
+    Ytil = Y - eta %*% t(Lambda)
     ps= rgamma(p, as + 0.5*n, bs+0.5*colSums(Ytil^2))
     Sigma=diag(1/ps)
     
@@ -152,7 +152,7 @@ fact2 = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     
     # -- save sampled values (after thinning) -- #
     if((i %% thin == 0) & (i > burn)) {
-      Omega = (tcrossprod(Lambda) + Sigma) * scaleMat
+      Omega = (Lambda %*%  t(Lambda) + Sigma) * scaleMat
       if(any(output %in% "covMean")) COVMEAN = COVMEAN + Omega / sp
       if(any(output %in% "covSamples")) OMEGA[,,ind] = Omega
       if(any(output %in% "factSamples")) LAMBDA[[ind]] = Lambda
