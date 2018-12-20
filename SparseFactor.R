@@ -70,7 +70,7 @@ fact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     Lmsg = Lambda * ps
     Veta1 = diag(k) + t(Lmsg) %*% Lambda
     eigs = eigen(Veta1)
-    if(all(eigs$values > 1e-6)) {
+    if(! all(eigs$values > 1e-6)) {
       Tmat = sqrt(eigs$values) * t(eigs$vectors)
     } else {
       Tmat = chol(Veta1)
