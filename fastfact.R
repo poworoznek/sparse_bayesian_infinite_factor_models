@@ -13,16 +13,14 @@
 #            output: output type, a vector including some of c("covMean", "covSamples", "factSamples", "numFactors")
 
 fact2 = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1, 
-                kinit = NULL, output = "covMean", context = 3L){
-
-#  setContext(id = context)
+                 kinit = NULL, output = "covMean"){
   
   p = ncol(Y)
   n = nrow(Y)
   
   as = 1                          # gamma hyperparameters for residual precision
   bs = 0.3                        
-  df = 3                                    # gamma hyperparameters for t_{ij}
+  df = 3                          # gamma hyperparameters for t_{ij}
   ad1 = 2.1
   bd1 = 1                         # gamma hyperparameters for delta_1
   ad2 = 3.1
@@ -44,7 +42,7 @@ fact2 = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
   
   # --- Initial values --- #
   ps = rgamma(p, as, bs)
-  Sigma = diag(1/ps)                               # Sigma = diagonal residual covariance
+  Sigma = diag(1/ps)                             # Sigma = diagonal residual covariance
   Lambda = matrix(1, nrow = p, ncol = k)
   ta = matrix(rnorm(n*k), nrow = n, ncol = k)    # factor loadings & latent factors
   meta = matrix(0,nrow = n, ncol = k)
@@ -71,12 +69,7 @@ fact2 = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     # -- Update eta -- #
     Lmsg = Lambda * ps
     Veta1 = diag(k) + t(Lmsg) %*% Lambda
-    eigs = eigen(Veta1, symmetric = TRUE)
-    if(! all(eigs$values > 1e-6)) {
-      Tmat = sqrt(eigs$values) * t(eigs$vectors)
-    } else {
-      Tmat = chol(Veta1)
-    }
+    Tmat = chol(Veta1)
     R = qr.R(qr(Tmat))
     S = solve(R)
     Veta = S %*% t(S)                                               # Veta = inv(Veta1)
@@ -84,19 +77,23 @@ fact2 = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     eta = Meta + matrix(rnorm(n*k), nrow = n, ncol = k) %*% t(S)    # update eta in a block
     
     # -- update Lambda (rue & held) -- #
-    eta2 = t(eta) %*% eta
-    
-    zlams = rnorm(k*p)
+    eta2 = t(eta) %*% eta    # prepare eta crossproduct before the loop
+    zlams = rnorm(k*p)       # generate normal draws all at once 
     
     for(j in 1:p) {
       Llamt = chol(diag(Plam[j,]) + ps[j]*eta2)
-      Lambda[j,] = t(solve(Llamt,zlams[1:k + (j-1)*k]) + 
+      Lambda[j,] = t(solve(Llamt,
+                           zlams[1:k + (j-1)*k]) + 
                        solve(Llamt,
-                             solve(t(Llamt), ps[j] * t(eta) %*% Y[,j])))
+                             solve(t(Llamt),
+                                   ps[j] * t(eta) %*% Y[,j])))
     }
     
     #------Update psi_{jh}'s------#
-    psijh = matrix(rgamma(p*k,df/2 + 0.5,df/2 + t(t(Lambda)^2 * (tauh))), nrow = p, ncol = k)
+    psijh = matrix(rgamma(p*k,
+                          df/2 + 0.5,
+                          df/2 + t(t(Lambda)^2 * (tauh))),
+                   nrow = p, ncol = k)
     
     #------Update theta & tauh------#
     mat = psijh * Lambda^2
