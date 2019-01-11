@@ -11,9 +11,12 @@
 #            thin: thinning interval;
 #            kinit: initial value for the number of factors;
 #            output: output type, a vector including some of c("covMean", "covSamples", "factSamples", "numFactors")
+#            covfilename: optional filename for covariance matrix samples
+#            factfilename: optional filename for factor matrix samples
 
 fact2 = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1, 
-                 kinit = NULL, output = "covMean"){
+                 kinit = NULL, output = "covMean", 
+                 covfilename = "Omega.rds", factfilename = "Lambda.rds"){
   
   p = ncol(Y)
   n = nrow(Y)
@@ -163,8 +166,14 @@ fact2 = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
   }
   out = lapply(output, function(x) {
     if(x == "covMean") return(COVMEAN)
-    if(x == "covSamples") return(OMEGA)
-    if(x == "factSamples") return(LAMBDA)
+    if(x == "covSamples") {
+      saveRDS(OMEGA, file = covfilename)
+      return(paste("see", covfilename))
+    }
+    if(x == "factSamples") {
+      saveRDS(LAMBDA, file = factfilename)
+      return(paste("see", factfilename))
+    }
     if(x == "numFactors") return(K)
   })
   names(out) = output
