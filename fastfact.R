@@ -1,6 +1,7 @@
-# Gibbs sampler for covariance estimation
-# using mgps prior on factor loadings
-# prior edits informed by Durante 2017
+# Gibbs sampler for factorized covariance estimation
+# using mgps prior on factor loadings from Battacharya Dunson (2011)
+# prior edits informed by Durante (2017)
+# version for adaptive number of factors weighted by iteration
 
 # ARGUMENTS: Y: Data matrix (n x p); 
 #            b0, b1, as, bs, df, ad1, bd1, ad2, bd2, adf, bdf: hyperparameters;
@@ -10,13 +11,16 @@
 #            burn: burn-in period;
 #            thin: thinning interval;
 #            kinit: initial value for the number of factors;
-#            output: output type, a vector including some of c("covMean", "covSamples", "factSamples", "numFactors")
-#            covfilename: optional filename for covariance matrix samples
-#            factfilename: optional filename for factor matrix samples
+#            output: output type, a vector including some of:
+#            c("covMean", "covSamples", "factSamples", "sigSamples", "numFactors");
+#            covfilename: optional filename for covariance matrix samples;
+#            factfilename: optional filename for factor matrix samples;
+#            sigfilename: optional filename for sigma matrix samples;
 
 fact2 = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1, 
                  kinit = NULL, output = "covMean", 
-                 covfilename = "Omega.rds", factfilename = "Lambda.rds"){
+                 covfilename = "Omega.rds", factfilename = "Lambda.rds", 
+                 sigfilename = "Sigma.rds"){
   
   p = ncol(Y)
   n = nrow(Y)
@@ -60,6 +64,7 @@ fact2 = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
   if(any(output %in% "covMean")) COVMEAN = matrix(0, nrow = p, ncol = p)
   if(any(output %in% "covSamples")) OMEGA = array(dim = c(p, p, sp))
   if(any(output %in% "factSamples")) LAMBDA = list()
+  if(any(output %in% "sigSamples")) SIGMA = array(dim = c(p, p, sp))
   if(any(output %in% "numFactors")) K = rep(NA, sp)
   ind = 1
   
@@ -156,6 +161,7 @@ fact2 = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
       if(any(output %in% "covMean")) COVMEAN = COVMEAN + Omega / sp
       if(any(output %in% "covSamples")) OMEGA[,,ind] = Omega
       if(any(output %in% "factSamples")) LAMBDA[[ind]] = Lambda
+      if(any(output %in% "sigSamples")) SIGMA[,,ind] = Sigma
       if(any(output %in% "numFactors")) K[ind] = k
       ind = ind + 1
     }
@@ -173,6 +179,10 @@ fact2 = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     if(x == "factSamples") {
       saveRDS(LAMBDA, file = factfilename)
       return(paste("see", factfilename))
+    }
+    if(x == "sigSamples") {
+      saveRDS(SIGMA, file = sigfilename)
+      return(paste("see", sigfilename))
     }
     if(x == "numFactors") return(K)
   })
