@@ -1,23 +1,21 @@
 # Gibbs sampler for factorized covariance estimation
 # using mgps prior on factor loadings from Battacharya Dunson (2011)
 # prior edits informed by Durante (2017)
-# version for adaptive number of factors weighted by iteration
+# version for fixed number of factors
 
 # ARGUMENTS: Y: Data matrix (n x p); 
-#            prop: proportion of elements in each column less than epsilon in magnitude cutoff;
-#            epsilon: tolerance;
 #            nrun: number of iterations;
 #            burn: burn-in period;
 #            thin: thinning interval;
-#            kinit: initial value for the number of factors;
+#            kinit: initial value for the number of factors (Must be passed);
 #            output: output type, a vector including some of:
-#            c("covMean", "covSamples", "factSamples", "sigSamples", "numFactors");
+#            c("covMean", "covSamples", "factSamples", "sigSamples");
 #            covfilename: optional filename for covariance matrix samples;
 #            factfilename: optional filename for factor matrix samples;
 #            sigfilename: optional filename for sigma matrix samples;
 
-fastfact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1, 
-                 kinit = NULL, output = "covMean", 
+fixedfact = function(Y, nrun, burn, thin = 1, 
+                 kinit, output = "covMean", 
                  covfilename = "Omega.rds", factfilename = "Lambda.rds", 
                  sigfilename = "Sigma.rds"){
   
@@ -35,8 +33,6 @@ fastfact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
   bdf = 1 
   b0 = 1
   b1 = 0.0005
-  
-  if(is.null(kinit)) kinit = floor(log(p)*3)
   
   sp = floor((nrun - burn)/thin)        # number of posterior samples
   
@@ -64,7 +60,6 @@ fastfact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
   if(any(output %in% "covSamples")) OMEGA = array(dim = c(p, p, sp))
   if(any(output %in% "factSamples")) LAMBDA = list()
   if(any(output %in% "sigSamples")) SIGMA = array(dim = c(p, p, sp))
-  if(any(output %in% "numFactors")) K = rep(NA, sp)
   ind = 1
   
   #------start gibbs sampling-----#
@@ -125,35 +120,6 @@ fastfact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     #---update precision parameters----#
     Plam = t(t(psijh) * tauh)
     
-    # ----- make adaptations ----#
-    prob = 1/exp(b0 + b1*i)                    # probability of adapting
-    uu = runif(1)
-    lind = colSums(abs(Lambda) < epsilon)/p    # proportion of elements in each column less than eps in magnitude
-    vec = lind >= prop
-    num = sum(vec)                             # number of redundant columns
-    
-    if(uu < prob) {
-      if((i > 20) & (num == 0) & all(lind < 0.995)) {
-        k = k + 1
-        Lambda = cbind(Lambda, rep(0,p))
-        eta = cbind(eta,rnorm(n))
-        psijh = cbind(psijh, rgamma(p,df/2,df/2))
-        theta[k] = 1 / rgamma(1, ad2,bd2)
-        tauh = 1 / cumprod(theta)
-        Plam = t(t(psijh) * tauh)
-      } else {
-        if (num > 0) {
-          k = max(k - num,1)
-          Lambda = Lambda[,!vec, drop = F]
-          psijh = psijh[,!vec, drop = F]
-          eta = eta[,!vec, drop = F]
-          theta = theta[!vec]
-          tauh = 1 / cumprod(theta)
-          Plam = t(t(psijh) * tauh)
-        }
-      }
-    }
-    
     # -- save sampled values (after thinning) -- #
     if((i %% thin == 0) & (i > burn)) {
       Omega = (Lambda %*%  t(Lambda) + Sigma) * scaleMat
@@ -161,7 +127,6 @@ fastfact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
       if(any(output %in% "covSamples")) OMEGA[,,ind] = Omega
       if(any(output %in% "factSamples")) LAMBDA[[ind]] = Lambda
       if(any(output %in% "sigSamples")) SIGMA[,,ind] = Sigma
-      if(any(output %in% "numFactors")) K[ind] = k
       ind = ind + 1
     }
     

@@ -30,7 +30,7 @@ factreg = function(Y, X, intercept = FALSE, nrun, burn, thin = 1, prop = 1, epsi
   data = cbind(Y, X)
   
   cat("---Sampling---\n")
-  sample = fact2(Y = data, prop = prop, epsilon = epsilon, 
+  sample = fastfact(Y = data, prop = prop, epsilon = epsilon, 
                  kinit = kinit, nrun = nrun, burn = burn, 
                  thin = thin, output = c("covSamples","factSamples", "sigSamples"),
                  covfilename = covfilename, factfilename = factfilename, 
