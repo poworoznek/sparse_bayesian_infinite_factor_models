@@ -7,7 +7,7 @@
 #            nrun: number of iterations;
 #            burn: burn-in period;
 #            thin: thinning interval;
-#            kinit: initial value for the number of factors (Must be passed);
+#            k: value for the number of factors (Must be passed);
 #            output: output type, a vector including some of:
 #            c("covMean", "covSamples", "factSamples", "sigSamples");
 #            covfilename: optional filename for covariance matrix samples;
@@ -15,7 +15,7 @@
 #            sigfilename: optional filename for sigma matrix samples;
 
 fixedfact = function(Y, nrun, burn, thin = 1, 
-                 kinit, output = "covMean", 
+                 k, output = "covMean", 
                  covfilename = "Omega.rds", factfilename = "Lambda.rds", 
                  sigfilename = "Sigma.rds"){
   
@@ -40,7 +40,6 @@ fixedfact = function(Y, nrun, burn, thin = 1,
   scaleMat = sqrt((VY) %*% t(VY))
   Y = scale(Y)
   num = 0
-  k=kinit                               # no. of factors to start with
   
   # --- Initial values --- #
   ps = rgamma(p, as, bs)

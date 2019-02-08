@@ -11,8 +11,6 @@ list2env(readMat("~/documents/factorR/datagenp_30ktr_5rep_1.mat"), envir = .Glob
 p = as.numeric(p)
 n = as.numeric(n)
 
-
-
 # --- define global constants --- #
 nrun=20000
 burn=5000
@@ -32,9 +30,10 @@ mserep = matrix(0,nrow = rep,ncol = 3)                          # mse,absolute b
 mse1rep = matrix(0,nrow = rep,ncol = 3)                         # same as above in original scale in estimating cov matrix
 nofrep = matrix(0,nrow = rep,ncol = sp)                         # evolution of factors across replicates
 adrep = matrix(0,nrow = rep,ncol = 1)                           # number of adaptations across replicates
+OMEGA = array(dim = c(p, p, sp))
 
 #library(profvis)
-#profvis({
+profvis({
   for(g in 1:rep) {
     
     cat("start replicate",g, "\n")
@@ -186,6 +185,7 @@ adrep = matrix(0,nrow = rep,ncol = 1)                           # number of adap
         Omegaout = Omegaout + as.vector(Omega)/sp
         Omega1out = Omega1out + as.vector(Omega1)/sp
         nof1out[(i-burn)/thin] = (nofout[(i-burn)/thin] - num)*(num > 0)
+        OMEGA[,,(i-burn)/thin] = Omega1
       }
       
       if((i %% 1000) == 0) {
@@ -206,9 +206,7 @@ adrep = matrix(0,nrow = rep,ncol = 1)                           # number of adap
     
     cat("end replicate",g, "\n")
     cat("--------------------\n")
-    
-    
-    
+
   }
   
-#})
+})
