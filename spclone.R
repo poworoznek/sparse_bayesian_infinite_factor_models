@@ -7,7 +7,7 @@
 #            tolerance: rotation algorithm stopping tolerance
 #            maxiter: maximum number of algorithm iterations
 
-spclone = function(lambdafile, method = "varimax", 
+spclone = function(lambdafile, method = "BADFM", 
                      tolerance = 1e-5, maxiter = 100, ncores = 1){
   library(parallel)
   lambda = readRDS(lambdafile) # read in factor samples
