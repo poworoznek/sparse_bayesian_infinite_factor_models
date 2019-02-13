@@ -9,6 +9,11 @@
 #            a: Dirichlet Laplace prior hyperparameter
 #            k: number of factors
 
+library(bayesSurv)
+library(GIGrvg)
+library(statmod)
+library(MCMCpack)
+
 regint = function(y, X ,nrun, burn, thin = 1, 
                   delta_rw = 0.002, epsilon_rw = 0.5,
                   a = 1/2, k = NULL){
@@ -41,6 +46,7 @@ regint = function(y, X ,nrun, burn, thin = 1,
   tau_st = array(0,c(sp,p))
   sigmasq_st = numeric(sp)
   alpha_bayes = numeric(sp)
+  beta_bayes = matrix(0,sp,p)
   acp = numeric(n)
   
   sigmasq_y = 1                     # initial values
@@ -69,28 +75,28 @@ regint = function(y, X ,nrun, burn, thin = 1,
     Lambda.T = t(Lambda)
     aMH = phi%*%t(phi)/sigmasq_y + Lambda.T%*%diag(ps)%*%Lambda + diag(k)
     
-    for (i in 1:n){                # Metropolis hastings step 
+    for (h in 1:n){                # Metropolis hastings step 
       
-      eta_star = bayesSurv::rMVNorm(1,eta[i,],diag(k)*delta_rw)
+      eta_star = bayesSurv::rMVNorm(1,eta[h,],diag(k)*delta_rw)
       eta_star.T = t(eta_star)     # avoid repeated transpose calls
-      eta.T = t(eta[i,])
+      eta.T = t(eta[h,])
       
-      logr = eta_star.T%*%(aMH - 2*Psi*y[i]/sigmasq_y)%*%eta_star -
-        2*eta_star.T%*%(Lambda.T%*%diag(ps)%*%X[i,] + phi*y[i]/sigmasq_y) +
+      logr = eta_star.T%*%(aMH - 2*Psi*y[h]/sigmasq_y)%*%eta_star -
+        2*eta_star.T%*%(Lambda.T%*%diag(ps)%*%X[h,] + phi*y[h]/sigmasq_y) +
         2*eta_star.T%*%phi*(eta_star%*%Psi%*%eta_star)/sigmasq_y + 
         (1/sigmasq_y)*(eta_star%*%Psi%*%eta_star)^2 - 
-        (eta.T%*%(aMH - 2*Psi*y[i]/sigmasq_y)%*%eta[i,] -
-           2*eta.T%*%(Lambda.T%*%diag(ps)%*%X[i,] + phi*y[i]/sigmasq_y) +
-           2*eta.T%*%phi*(eta[i,]%*%Psi%*%eta[i,])/sigmasq_y +
-           (1/sigmasq_y)*(eta[i,]%*%Psi%*%eta[i,])^2)
+        (eta.T%*%(aMH - 2*Psi*y[h]/sigmasq_y)%*%eta[h,] -
+           2*eta.T%*%(Lambda.T%*%diag(ps)%*%X[h,] + phi*y[h]/sigmasq_y) +
+           2*eta.T%*%phi*(eta[h,]%*%Psi%*%eta[h,])/sigmasq_y +
+           (1/sigmasq_y)*(eta[h,]%*%Psi%*%eta[h,])^2)
       logr = logr*(-0.5)
       
       logu = log(runif(1))
       
       if (logr > logu){
-        eta[i,] = eta_star
-        if(i>burn){
-          acp[i] = acp[i] + 1
+        eta[h,] = eta_star
+        if(h>burn){
+          acp[h] = acp[h] + 1
         }
       }
     }
@@ -102,7 +108,7 @@ regint = function(y, X ,nrun, burn, thin = 1,
     Lambda_n = X_reg.T%*%X_reg/sigmasq_y + diag(rep(1,ncol(X_reg)))/100
     Vcsi = solve(Lambda_n)
     Mcsi = Vcsi%*%X_reg.T%*%(y-eta%*%phi)/sigmasq_y
-    csi = as.numeric(rmvnorm(1,Mcsi,Vcsi, method = "chol"))  # ???
+    csi = bayesSurv::rMVNorm(n=1,mean=Mcsi,Sigma=Vcsi)
     lambda_diag = csi[1:k]
     lambda = csi[(k+1):length(csi)]
     Psi[lower.tri(Psi)] = lambda/2
@@ -115,7 +121,7 @@ regint = function(y, X ,nrun, burn, thin = 1,
     Lambda_n = eta.T%*%eta/sigmasq_y + diag(rep(1,ncol(eta)))/100
     Vcsi = solve(Lambda_n)
     Mcsi = Vcsi%*%eta.T%*%(y-diag(eta%*%Psi%*%eta.T))/sigmasq_y     # using updated psi
-    phi = as.numeric(rmvnorm(1,Mcsi,Vcsi, method = "chol"))
+    phi = bayesSurv::rMVNorm(n = 1, mean = Mcsi, Sigma = Vcsi)
     
     # --- Update sigmasq_y --- #
     an = 0.5 + n/2
