@@ -25,7 +25,7 @@ lammed = apply(lamarray, c(1, 2), median)
 #### Test for label switches
 
 difflist = lapply(lambda, function(L) L - lammed)
-norms = sapply(difflist, norm, type = "f")
+norms = sapply(difflist, norm, type = "2")
 plot(density(norms))
 
 w = which(norms > 6)
@@ -62,25 +62,73 @@ plot(density(norms.switch))
 
 lamarray.switch = unlist(lambda.switch) %>% array(c(100, 10, 8000))
 
+par(mfrow = c(2,2))
+
 w =  which(norms.switch > 2)
 
 for(i in 9:10){
-  plot(lamarray.switch[20, i, ], pch = ".")
+  plot(lamarray.switch[20, i, ], pch = ".",
+       main = paste("column", i, "row 20"))
   points(w, lamarray.switch[20, i, w], pch = ".", col = "red")
 }
 
 
+lambda.aligned = clustalign(lambda.switch)
+difflist.aligned = lapply(lambda.aligned, function(L) L - lammed)
+norms.aligned = sapply(difflist.aligned, norm, type = "2")
+plot(density(norms.aligned))
+
+lamarray.aligned = unlist(lambda.aligned) %>% array(c(100, 10, 8000))
+
+w =  which(norms.aligned > 2)
+
+for(i in 9:10){
+  plot(lamarray.aligned[20, i, ], pch = ".",
+       main = paste("column", i, "row 20 clustaligned"))
+  points(w, lamarray.aligned[20, i, w], pch = ".", 
+         col = "red", main = paste("column", i, "row 20"))
+}
 
 
+lambda.switch2 = lapply(1:8000, function(ind){
+  if(ind < 4000 | ind > 7000){ 
+    lambda.switch[[ind]]
+  } else {
+    lambda.switch[[ind]][, c(2, 1, 3:10)]}
+})
+
+difflist.switch2 = lapply(lambda.switch2, function(L) L - lammed)
+norms.switch2 = sapply(difflist.switch2, norm, type = "2")
+plot(density(norms.switch2))
+
+lambda.aligned2 = clustalign(lambda.switch2)
+difflist.aligned2 = lapply(lambda.aligned2, function(L) L - lammed)
+norms.aligned2 = sapply(difflist.aligned2, norm, type = "2")
+plot(density(norms.aligned2))
 
 
+lamarray.aligned2 = unlist(lambda.aligned2) %>% array(c(100, 10, 8000))
+
+w =  which(norms.aligned2 > 2)
+
+for(i in 9:10){
+  plot(lamarray.aligned2[20, i, ], pch = ".",
+       main = paste("column", i, "row 20 clustaligned"))
+  points(w, lamarray.aligned2[20, i, w], pch = ".", 
+         col = "red", main = paste("column", i, "row 20"))
+}
 
 
+lambda = readRDS("factorsForLS.rds")
+lamarray = unlist(lambda) %>% array(c(100, 10, 8000))
+lammed = apply(lamarray, c(1, 2), median)
 
+#### True est for label switches
 
-
-
-
+difflist = lapply(lambda, function(L) L - lammed)
+norms = sapply(difflist, norm, type = "2")
+plot(density(norms))
+lambda.test = 
 
 
 
