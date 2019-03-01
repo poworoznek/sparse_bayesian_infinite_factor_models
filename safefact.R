@@ -16,7 +16,7 @@
 #            factfilename: optional filename for factor matrix samples;
 #            sigfilename: optional filename for sigma matrix samples;
 
-fastfact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1, 
+safefact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1, 
                     kinit = NULL, output = "covMean", 
                     covfilename = "Omega.rds", factfilename = "Lambda.rds", 
                     sigfilename = "Sigma.rds"){
