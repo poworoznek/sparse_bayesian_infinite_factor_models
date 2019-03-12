@@ -15,6 +15,7 @@ We first simulate data approximating the data generating process, initializing o
 library(mvtnorm)
 library(tidyverse)
 library(abind)
+library(parallel)
 source("safefact.R")
 source("fixedfact.R")
 source("simulate_data_fxns.R")
