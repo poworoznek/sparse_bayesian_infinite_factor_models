@@ -6,12 +6,17 @@
 #            method: rotation method; one of c("varimax", "BADFM");
 #            tolerance: rotation algorithm stopping tolerance;
 #            maxiter: maximum number of algorithm iterations;
+#            ncores: number of cores
+#            normalize: logical. whether to normalize lambda samples
 
 mcrotfact = function(lambdafile, method = "BADFM", 
-                     tolerance = 1e-5, maxiter = 100, ncores = 1){
+                     tolerance = 1e-5, maxiter = 100, ncores = 1,
+                     normalize = TRUE){
   library(parallel)
   lambda = readRDS(lambdafile) # read in factor samples
   n = length(lambda)           # initialize shared attributes
+  if(normalize) lambda = mclapply(lambda, scale,
+                                  mc.cores = ncores)
   
   if(method == "varimax"){        # Varimax rotations
     Lr = mclapply(lambda,

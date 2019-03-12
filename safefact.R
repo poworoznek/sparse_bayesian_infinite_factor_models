@@ -15,11 +15,12 @@
 #            covfilename: optional filename for covariance matrix samples;
 #            factfilename: optional filename for factor matrix samples;
 #            sigfilename: optional filename for sigma matrix samples;
+#            verbose: logical. print sample checkpoints?
 
 safefact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1, 
                     kinit = NULL, output = "covMean", 
                     covfilename = "Omega.rds", factfilename = "Lambda.rds", 
-                    sigfilename = "Sigma.rds"){
+                    sigfilename = "Sigma.rds", verbose = TRUE){
   
   p = ncol(Y)
   n = nrow(Y)
@@ -69,7 +70,7 @@ safefact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
   
   #------start gibbs sampling-----#
   
-  cat("Start\n")
+  if(verbose) cat("Start\n")
   
   for(i in 1:nrun) {
     
@@ -165,7 +166,7 @@ safefact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
       ind = ind + 1
     }
     
-    if((i %% 1000) == 0) {
+    if(((i %% 1000) == 0) & verbose) {
       cat(i,"\n")
     }
   }

@@ -1,0 +1,145 @@
+---
+title: "Post-Processing Overview"
+author: "Evan Poworoznek"
+output: html_document
+---
+
+###Description
+The covariance matrix factorization $\Omega = \Lambda \Lambda' + \Sigma$ is a useful representation for a variety of problems, but sampling the posterior distribution under this model is not trivial. Without constraints the factor loadings matrix $\Lambda$ is unidentifiable, displaying both rotational ambiguity and column label switching. This document outlines the process for enforcing identifiability on samples of this factor loadings matrix using functions from this package. This post-processing platform is built for factor loadings matrix samples generated from the 
+*Sparse Bayesian Infinite Factor Models* sampler (`fastfact()`, `fixedfact()` or `safefact()`) and the *Bayesian Factor Analysis for Estimating Interactions* sampler (`regint()`), but should apply generally to any list of factor loadings matrix samples.
+
+###Sampling
+We first simulate data approximating the data generating process, initializing our factor loadings matrix columns with independent Gaussian noise. We run the adaptive-$k$ sampler to determine the estimated number of factors for these data. Then, using the estimated number of factors $k$, we run the fixed-$k$ sampler. In order to perform post-processing for identifiability the number of factor-loadings columns in the sample to be processed must be constant. Constant-$k$ sample sets from the adaptive sampler can be processed, but the fixed sampler is convenient.
+
+```{r, message=FALSE}
+library(mvtnorm)
+library(tidyverse)
+library(abind)
+source("safefact.R")
+source("fixedfact.R")
+source("simulate_data_fxns.R")
+source("clustalign.R")
+source("permfact.R")
+source("permuter.R")
+source("mcrotfact.R")
+```
+```{r, message = FALSE, cache = TRUE}
+set.seed(10)
+
+##### SIMULATE DATA #####
+sigmasq = 1; p = 100; n = 100; ktrue = 10
+output = simulate_x(n, p, ktrue, sigmasq, simulate_lambda, 
+                    return_lambda = TRUE)
+Y = output$x
+
+##### PERFORM ADAPTIVE SAMPLING #####
+ksamps = safefact(Y, nrun = 30000, burn = 0, 
+                  output = "numFactors", verbose = FALSE)
+plot(ksamps[[1]], type = 'l')
+```
+```{r, cache = TRUE, message = FALSE, eval = FALSE}
+k = 10
+##### PERFORM FIXED SAMPLING #####
+out = fixedfact(Y, nrun = 30000, burn = 20000, k = k, 
+                output = "factSamples", factfilename = "pplsamps.rds")
+```
+
+###Post-Processing
+There are two rotational methods implemented: Varimax (Kaiser 1958), and a rotation proposed in *Bayesian Analysis of Dynamic Factor Models* (Aßmann, Boysen-Hogrefe, Pape 2014). These methods differ in their approach and use. The Varimax rotation is applied individually to each sample of the matrix of factor loadings, and so column alignment to remove label switching is performed after each sample is rotated. The BADFM algorithm iteratively rotates factor loadings matrix samples by their sample mean, and so label switching must be resolved before rotation can be performed. We will focus on the BADFM algorithm, because it results in less noisy samples by virtue of the stability in the estimated posterior mean.
+
+####Label Switching
+The label switching present in samples of the factor loadings matrix prevents direct averaging or summary functions of the MCMC chain. This switching is an effect of the sampling and can be directly resolved without model constraints after a stationary distribution is sampled sufficiently. It is important that stationarity in distribution is reached and burn-in samples are discarded before alignment is done to resolve label-switching, as the large movements made during burn-in can appear similar to label-switches, and incorrect relabeling can occur. 
+<br>
+<br>
+Our method to resolve label switching takes advantage of the large parameter space that hinders comparable methods such as ECR (Papastamoulis, Iliopoulos. 2010) and PRA (Marin, Mengersen, Robert 2005). An initial pivot sample of the factor loadings matrix is identified, and the SVD norms of the differences between this pivot matrix and each sampled matrix are clustered. These clusters represent the large dissimilarities between samples that result when columns switch labels. Such norms are shown below on the simulated data.
+
+```{r}
+lambda = readRDS("pplsamps.rds")
+pivot = lambda[[1]]
+diff = lapply(lambda, `-`, pivot)
+norms = sapply(diff, norm, type = "2")
+plot(density(norms), main = "SVD norms of sample differences")
+```
+
+In this sample no label switching has occurred. This single cluster of norms provides a clear picture of the natural sampling variation. We manually perform label switching of some columns in this sample and recompute the norms to approximate the sampling process.
+
+```{r}
+lambda.switch = lapply(1:10000, function(ind){
+  if(ind < 4000){ 
+    lambda[[ind]]
+  } else {
+    if(ind < 7000){
+      lambda[[ind]][, c(2, 1, 3:10)]
+    } else {
+        lambda[[ind]][, c(2, 3, 1, 4:10)]
+      }}
+})
+difflist.switch = lapply(lambda.switch, `-`, pivot)
+norms.switch = sapply(difflist.switch, norm, type = "2")
+plot(density(norms.switch), main = "SVD norms with label-swithcing")
+```
+
+Samples that share the labeling of the pivot sample are found in the lowest cluster, and higher clusters represent samples for which labels have switched. Switches of labels of columns with similar differences can result in similar norm values, so these higher clusters do not necessarily represent a single permutation of the original pivot labels. In the above example the higher cluster represents both the column permutations performed. To separate these higher clusters, the method is applied recursively, and a new pivot sample is chosen from the higher clusters, and the norms are reclustered to find separation among the labelings in those smaller sets of samples. At each iteration as the lower cluster of samples aligned with the current pivot is identified, the remaining number of label switches present in the samples is reduced. Once each sample is matched with a pivot sample, the clusters can be permuted together to align with the original pivot.
+<br>
+<br>
+The permutation problem is expensive to solve, so the space of permutations of column labels is iteratively searched in an order natural to the data generating process. The columns of the factor loadings matrix switch in the sampling process when their samples end up near to each other. Therefore, we wish to search all first order switches where only two columns have switched labels before we consider permutations representing the case when two columns switch labels, then two more columns switch labels and so on. As we perform these permutations, we compare the SVD norm of the differences between the permuted sample and the original pivot sample. If this norm falls below a threshold representing standard sampling noise for aligned samples, we have found an appropriate relabeling, and this relabeling is applied to all samples from the cluster matching the permuted sample. This method is performed below.
+
+```{r}
+lambda.aligned = clustalign(lambda.switch, initialpivot = lambda[[1]])
+diff.aligned = lapply(lambda.aligned, `-`, pivot)
+norms.aligned = sapply(diff.aligned, norm, type = "2")
+plot(density(norms.aligned), main = "SVD norms of aligned sample differences")
+```
+
+In cases with noisy sampling relative to factor loadings values, poor sampling convergence, or a largely overestimated number of factors, these clusters may be poorly separated and backwards permutation can be a more intensive process. See the discussion of the algorithm for diagnostic information.
+
+####Rotational Identifiability
+
+The package samplers do not impose orthogonality constraints, so the rotational ambiguity in the factor loadings matrix samples must be removed before they represent an interpretable posterior sample. We focus on post-hoc orthogonalization methods in this package. The two implemented rotational schemes have largely different motivations. The Varimax rotation algorithm treats the samples independently and is therefore appropriate for samples with label-switching still present, or nearly-orthogonal samples. The "BADFM" method uses the Orthogonal Procrustes algorithm, utilizing the factor loadings sample mean matrix for the rotations, which are applied to every sample uniformly. Sampling noise that results in increasing the linear dependence between columns is leads to inappropriate, noisy rotations under Varimax rotation, while for well estimated posteriors, rotating based on the sample mean leads to identifiability without the additional noise. Thus the "BADFM" method produces less noisy, more stable identifiable samples in general. The method is performed below.
+
+```{r, cache = TRUE}
+fmean = Reduce(`+`, lambda.aligned) / length(lambda.aligned)
+frot = mcrotfact(lambdafile = "pplsamps.rds", method = "BADFM", ncores = 6)
+par(mfrow = c(1, 2))
+image(t(scale(fmean)), main = "Unrotated Sample Mean", axes = FALSE)
+image(t(scale(frot[['mean']])), main = "BADFM Rotated Sample Mean", axes = FALSE)
+```
+
+For comparison, we provide the Varimax rotation results below.
+```{r, cache = TRUE}
+fvrot = mcrotfact(lambdafile = "pplsamps.rds", method = "varimax", ncores = 6)
+par(mfrow = c(1, 2))
+image(t(scale(fmean)), main = "Unrotated Sample Mean", axes = FALSE)
+image(t(scale(fvrot[['mean']])), main = "Varimax Rotated Sample Mean", axes = FALSE)
+```
+
+The rotational computation is parallelized for efficiency. Use `rotfact()` in place of `mcrotfact()` for platforms that do not allow efficient forking (i.e. Windows compute environments). No random numbers are generated for either rotation platform, so this parallelization will not affect the reproducibility of results. Note that even after orthogonalization, each column of the factor matrix is still sign-ambiguous.
+
+###Algorithms
+
+####clustalign
+The label switching problem is solved with a focus on computational efficiency. For the matrix $\Lambda_\pi$ resulting from any permutation applied to the columns of the factor loadings matrix $\Lambda$, $\Lambda_\pi\Lambda_\pi' = \Lambda\Lambda'$. As the resulting covariance matrix sample remains stationary, these permutations can occur in the course of sampling, and are more likely for over-specified $k$. Given a set of $M$ MCMC samples $\Lambda_{\pi_i}^{(i)}$ for $i \in \{1, ..., M\}$ we wish to find the reverse permutations $\pi_i^{-1}$ that align the columns of each of these samples. The set of possible solutions has cardinality $k!m$ and the traditional solution is to compute a loss function for each permutation of each sample (Papastamoulis, Iliopoulos. 2010) (Marin, Mengersen, Robert 2005) (Sperrin et al. 2010). Note that to compare with ECR we view the problem in a mixture representation, and there are no non-zero allocation vector components in such a representation, so the set of equivalence classes is equal to the original set of permutations. This is untenable with even moderately sized $k$. Our algorithm makes advances in reducing the number times the permutation space is searched from $M$ to $L<<M$, and searching the permutation space in an iterative deterministic manner that is most efficient for the problem of column label switching. 
+<br>
+<br>
+As with other algorithms we determine a pivot with which to compare and align other samples. This pivot is a $p\times k$ matrix that represents an exemplar of a particular $\Lambda_{\pi_i}$. This is typically a sample from the MCMC chain, but could be a median or other stabilized estimate of the loadings for a $\Lambda_{\pi_i}$. This pivot can be directly specified with the `initialpivot` argument of `clustalign`. By default the pivot is chosen to be a randomly sampled factor loadings matrix in the sampling chain.
+<br>
+<br>
+To minimize $L$, we wish to cluster samples that share the same column alignment. We assume the number of unique permutations represented in the $i$ samples is much less than $i$. This is likely under suitable choices of $k$, because label switching happens primarily when two loadings are sampled with similar loadings values. Shrinkage priors will not allow similar factor loadings that do not contribute unique information. This unique information makes clustering viable. We compute the element-wise difference matrices between the pivot and every MCMC sample and compute the SVD norms of these difference matrices. These norms represent the relative distance between each sample and the pivot, and their values are decided by a combination of sampling noise and label switching.
+<br>
+<br>
+For samples that share the column alignment, only sampling noise is present. In this case if approximate stationarity is reached the difference matrix elements are differences of continuous scale mixtures of normals with same mean (for MGSP, DL, and CUSP), thus the SVD norm represents an amalgamation of these differences and the distribution of these norms will be unimodal. For sets of samples that do not share the same alignment as the pivot but are aligned within the set, the same unimodality argument applies, but the center of this distribution of norms will be higher, because the difference matrix elements will be larger in aggregate for the switched columns. The degree of effectiveness and the value of $L$ for this method is determined by the separation between these distributions of norms. When more unique information is contained in two factor loadings, as the models prefer, a possible switch in labels is more easily identified. Additionally, if factor loadings are within standard sampling noise of each other, $k$ is over-specified or the amount of shrinkage is too high. Given this separation we cluster the samples by performing k means clustering on the SVD norms.
+<br>
+<br>
+At each iteration of the algorithm two clusters are identified. K means prefers clusters with equal variance, so if these clusters were artificially assigned and no separation existed, the overall variance of the norms should be less than four times the variance of one cluster. Thus if this criterion is met, the samples are determined to share an alignment. The inverse permutation is identified, performed, and the samples are collated back into the MCMC chain. 
+<br>
+<br>
+If the clustering explains a large amount of the variance in the norms, the distribution of norms is considered a mixture distribution, with one component for every label switch present in the sample. The clustalign algorithm is then applied recursively and separately to each of the two clusters of samples. New pivots are chosen are random from the reduced sample sets. This allows particular permutations of the labels to be uniquely identified, even if their differences from the initial pivot were similar, as in the example above. Eventually, each sample will belong to a set of samples identified as aligned. From this formulation, the number of pivots required to classify these samples is equal to $L$ and depends directly on the separation previously discussed. In the well separated case, for $J$ unique permutations $L \approx J\log_2J$. Thus this method scales with the number of well separated permutations present in the MCMC chain, and not the number of MCMC samples, which is far preferable.
+<br>
+<br>
+The second computational efficiency in this method is in the inverse permutation calculation. We know label switches occur between two columns, and the likelihood of a permutation is inversely proportional to how many times a column label would need to switch with another to generate the permutation. Therefore we iteratively search the set of permutations in fewest-switch order indexed by our iterator. The function `permuter()` outputs these permutations for an arbitrary vector and index. 
+<br>
+<br>
+We define a stopping criterion based on the sampling noise in an aligned cluster of samples equal to the mean of the difference matrix norms of the initially aligned cluster plus one standard deviation. In our inverse permutation algorithm we apply the column permutations to the element-wise median of the sample factor loadings matrices and compute the SVD norm on the difference with the pivot matrix. We perform this search iteratively in the fewest-switch order described above. When this norm falls below the stopping criterion, the inverse permutation has been identified and is applied.
+<br>
+<br>
+Iteration over this permutation set proceeds until stoppage or a maximum number of iterations is reached, which can be larger than k! to allow repeated comparison, but is typically not. By this structured ordering, the number of factors can grow to be large without loss of computational feasability. The order of complexity to identify a label switch in this scheme is $k^{2n}$ for a switch of order $n$. Therefore for an arbitrary permutation this permutation method is as efficient as PRA, but for permutations of the type we expect to see most this permutation method is much more efficient.

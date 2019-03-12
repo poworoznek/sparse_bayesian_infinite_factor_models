@@ -16,7 +16,7 @@ k = 10
 output = simulate_x(n, p, k, sigmasq, simulate_lambda, return_lambda = TRUE)
 Y = output$x
 
-fixedfact(Y, nrun = 10000, burn = 2000, k = 10, output = "factSamples", factfilename = "factorsForLS.rds")
+fixedfact(Y, nrun = 10000, burn = 200, k = 10, output = "factSamples", factfilename = "factorsForLS.rds")
 
 lambda = readRDS("factorsForLS.rds")
 lamarray = unlist(lambda) %>% array(c(100, 10, 8000))
@@ -24,7 +24,7 @@ lammed = apply(lamarray, c(1, 2), median)
 
 #### Test for label switches
 
-difflist = lapply(lambda, function(L) L - lammed)
+difflist = lapply(lambda, `-`, lammed)
 norms = sapply(difflist, norm, type = "2")
 plot(density(norms))
 
@@ -73,7 +73,8 @@ for(i in 9:10){
 }
 
 
-lambda.aligned = clustalign(lambda.switch)
+
+lambda.aligned = clustalign2(lambda.switch)
 difflist.aligned = lapply(lambda.aligned, function(L) L - lammed)
 norms.aligned = sapply(difflist.aligned, norm, type = "2")
 plot(density(norms.aligned))
@@ -123,20 +124,34 @@ lambda = readRDS("factorsForLS.rds")
 lamarray = unlist(lambda) %>% array(c(100, 10, 8000))
 lammed = apply(lamarray, c(1, 2), median)
 
-#### True est for label switches
+#### True test for label switches
+source("clustalign.R")
+source("permfact.R")
+source("permuter.R")
 
 difflist = lapply(lambda, function(L) L - lammed)
 norms = sapply(difflist, norm, type = "2")
 plot(density(norms))
-lambda.test = 
+lambda.test = clustalign(lambda)
+
+difflist.test = lapply(lambda.test, function(L) L - lammed)
+norms.test = sapply(difflist.test, norm, type = "2")
+plot(density(norms.test))
 
 
-
+# Burn in that looks like label switching
 lambda2 = readRDS("Lambda2.rds")
 lamarray2 = unlist(lambda2) %>% array(c(100, 10, 8000))
 lammed2 = apply(lamarray2, c(1, 2), median)
 
-difflist2 = lapply(lambda2, function(L) L - lammed2)
+difflist2 = lapply(lambda2, `-`, lammed2)
 norms2 = sapply(difflist2, norm, type = "f")
 plot(density(norms2))
+
+lam2.test = clustalign(lambda2)
+
+difflist2.test = lapply(lam2.test, `-`, lammed2)
+norms2.test = sapply(difflist2.test, norm, type = "f")
+plot(density(norms2.test))
+
 

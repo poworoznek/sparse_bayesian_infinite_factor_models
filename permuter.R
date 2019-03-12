@@ -1,5 +1,5 @@
-# function to permute in a smart order
-# see C++ translation
+# function to permute in minimal-switch order
+# will output repeated orders for i > k!
 
 # ARGUMENTS: vec: a vector to permute
 #            i: index of permutation in minimal-switch order
