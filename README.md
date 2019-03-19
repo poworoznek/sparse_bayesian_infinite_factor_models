@@ -21,6 +21,6 @@ A. Bhattacharya and D. B. Dunson (2011). Sparse Bayesian Infinite Factor Models.
 
 `safefact.R` implements the Gibbs sampler in bka paper
 
-See the Post Processing Overview for general discussion of `rotfact.R` and `clustalign.R`.
+See the Post Processing Overview for general discussion of `mcrotfact.R` and `clustalign.R`.
 
 
