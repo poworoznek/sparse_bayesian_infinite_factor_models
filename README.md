@@ -17,6 +17,10 @@ predict survival times from gene expression data.
 
 A. Bhattacharya and D. B. Dunson (2011). Sparse Bayesian Infinite Factor Models. *Biometrika* 98(2), pp. 291–306
 
-`gendat.m`  generates simulated data
+`simulate_data.R`  generates simulated data
 
-`spfactcovest_mgploadings.m` implements the Gibbs sampler in bka paper
+`safefact.R` implements the Gibbs sampler in bka paper
+
+See the Post Processing Overview for general discussion of `rotfact.R` and `clustalign.R`.
+
+
