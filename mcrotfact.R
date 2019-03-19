@@ -11,7 +11,7 @@
 
 mcrotfact = function(lambdafile, method = "BADFM", 
                      tolerance = 1e-5, maxiter = 100, ncores = 1,
-                     normalize = TRUE){
+                     normalize = FALSE){
   library(parallel)
   lambda = readRDS(lambdafile) # read in factor samples
   n = length(lambda)           # initialize shared attributes

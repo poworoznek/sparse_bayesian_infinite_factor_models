@@ -2,7 +2,7 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::plugins(cpp11)]]
 
-using namespace arma ;
+using namespace arma;
 
 
 // [[Rcpp::export]]
@@ -20,6 +20,7 @@ Rcpp::List MGSPsamp(int p, int n, int k,
                     arma::vec theta, arma::vec tauh,
                     arma::mat Plam,arma::mat Y,
                     arma::mat scaleMat, Rcpp::StringVector output){
+  // --- initialise output objects --- //
   Rcpp::StringVector cm = "covMean";
   Rcpp::StringVector cv = "covSamples";
   Rcpp::StringVector fs = "factSamples";
@@ -31,11 +32,14 @@ Rcpp::List MGSPsamp(int p, int n, int k,
   bool fac = Rcpp::any(Rcpp::in(fs, output)).is_true();
   bool sig = Rcpp::any(Rcpp::in(ss, output)).is_true();
   bool nfa = Rcpp::any(Rcpp::in(nf, output)).is_true();
+  
+  sp -= 1;
   mat COVMEAN;
   cube OMEGA;
   Rcpp::List LAMBDA;
   cube SIGMA(p, p, sp, fill::zeros);
   vec K(sp, fill::zeros);
+  
   if(covm) mat COVMEAN(p, p, fill::zeros);
   if(cov) cube OMEGA(p, p, sp, fill::zeros);
   if(fac) Rcpp::List LAMBDA;
@@ -43,39 +47,26 @@ Rcpp::List MGSPsamp(int p, int n, int k,
   if(nfa) vec K = zeros<vec>(sp);
   int ind = 0;
   
-  mat Lmsg;
-  mat Veta1;
-  mat Tmat;
-  mat Q, R;
-  mat S;
-  mat Veta;
-  mat Meta;
-  mat noise;
-  mat eta;
-  mat eta2;
-  mat Llamt;
-  mat Lambda_sq;
-  mat shape;
-  mat matr;
-  double ad;
-  double bd;
-  vec tauh_sub;
-  mat Ytil;
-  mat bsvec;
-  double prob;
-  double uu;
-  umat llog;
-  mat lint;
-  mat lind;
-  int num;
-  umat vecs;
-  vec lind2;
-  mat Omega;
+  // --- initialise loop objects --- //
+  mat Lmsg, Veta1, Tmat, Q, R, S, Veta, Meta,
+  noise, eta, eta2, Llamt, Lambda_sq, shape,
+  matr, Ytil, bsvec, lint, lind, Omega;
+  
+  umat llog, vecs;
+  
+  vec tauh_sub, lind2;
+  
   ivec facts;
+  
+  double ad, bd, prob, uu;
+  
+  int num;
+  
   bool thincheck;
   
+  // --- loop --- //
   for(int i=0; i<nrun; ++i){
-    // UPDATE ETA
+    // --- UPDATE ETA --- //
     Lmsg = Lambda.each_col() % ps;
     Veta1 = eye<mat>(k,k) + Lmsg.t() * Lambda;
     Tmat = chol(Veta1);
@@ -86,16 +77,16 @@ Rcpp::List MGSPsamp(int p, int n, int k,
     noise = mat(n, k, fill::randn);
     eta = Meta + noise * S.t();
     
-    // UPDATE LAMBDA
+    // --- UPDATE LAMBDA --- //
     eta2 = eta.t() * eta;    // prepare eta crossproduct before the loop
     for(int j = 0; j < p; ++j) {
       Llamt = chol(diagmat(Plam.row(j)) + ps(j)*eta2);
-      Lambda.row(j) = solve(Llamt, randn<vec>(k) + 
+      Lambda.row(j) = (solve(Llamt, randn<vec>(k)) +
         solve(Llamt, solve(Llamt.t(), ps(j) * eta.t() * Y.col(j)))).t();
     }
     
-    // UPDATE psihj
-    Lambda_sq = pow(Lambda,2);
+    // --- UPDATE psihj --- //
+    Lambda_sq = square(Lambda);
     shape = Lambda_sq.each_row() % tauh.t();
     for (int l=0; l < p; l++) {
       for (int j=0; j < k; j++) {
@@ -104,33 +95,33 @@ Rcpp::List MGSPsamp(int p, int n, int k,
       }
     }
     
-    // UPDATE THETA & TAUH
-    matr = psijh % pow(Lambda, 2);
+    // --- UPDATE THETA & TAUH --- //
+    matr = psijh % square(Lambda);
     ad = ad1 + 0.5 * p * k;
-    bd = bd1 + 0.5 * theta[0] * sum(tauh.t() % sum(matr, 0));
-    theta[0] = randg(distr_param(ad, 1 / bd));           
+    bd = bd1 + 0.5 / theta[0] * sum(tauh.t() % sum(matr, 0));
+    theta[0] = randg(distr_param(ad, 1 / bd));
     tauh = cumprod(theta);
     
     for(int h=1; h<k; ++h) {
       ad = ad2 + 0.5 * p *(k-h);
       tauh_sub = tauh.subvec(h,k-1);
-      bd = bd2 + 0.5 * sum(tauh_sub.t() % sum(matr.cols(h,k-1), 0));
-      theta(h) = randg(distr_param(ad, 1 / bd)); 
+      bd = bd2 + 0.5 / theta(h) * sum(tauh_sub.t() % sum(matr.cols(h,k-1), 0));
+      theta(h) = randg(distr_param(ad, 1 / bd));
       tauh = cumprod(theta);
     }
     
-    // UPDATE SIGMA
+    // --- UPDATE SIGMA --- //
     Ytil = Y - eta * Lambda.t();
-    bsvec =  bs + 0.5*sum(pow(Ytil,2), 0);
+    bsvec =  bs + 0.5 * sum(pow(Ytil,2), 0);
     for(int l = 0; l < p ; ++l){
-      ps(l) = randg(distr_param(as + 0.5*n, 1 / bsvec(0,l))); 
-    } 
+      ps(l) = randg(distr_param(as + 0.5*n, 1 / bsvec(0,l)));
+    }
     Sigma = diagmat(1/ps);
     
-    //UPDATE PLAM
+    // --- UPDATE PLAM --- //
     Plam = psijh.each_row() % tauh.t();
     
-    //ADAPT K
+    // --- ADAPT K --- //
     prob = 1 / std::exp(b0 + b1 * (i + 1));            // probability of adapting
     uu = randu();
     llog = abs(Lambda) < epsilon;
@@ -141,7 +132,6 @@ Rcpp::List MGSPsamp(int p, int n, int k,
     for(int h = 0; h < k ; ++h){
       num += vecs(0,h);
     }
-    cout << num;
     lind2 = arma::conv_to<arma::vec>::from(lind);
     if(uu < prob) {
       if((i > 20) && (num == 0) && all(lind2 < 0.995)) {
@@ -151,7 +141,7 @@ Rcpp::List MGSPsamp(int p, int n, int k,
         eta.resize(p, k);
         eta.col(k-1) = randn(n);
         psijh.resize(p, k);
-        psijh.col(k-1) = randg(p,distr_param(df/2,1/df/2));
+        psijh.col(k-1) = randg(p,distr_param(df/2,1/(df/2)));
         theta.resize(k);
         theta(k-1) = randg(distr_param(ad2,1/bd2));
         tauh = cumprod(theta);

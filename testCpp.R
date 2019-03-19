@@ -8,13 +8,13 @@ p = 100
 n = 100
 k = 10
 
-output = simulate_x(n, p, k, sigmasq, simulate_lambda, 
+outp = simulate_x(n, p, k, sigmasq, simulate_lambda, 
                     return_lambda = TRUE)
-Y = output$x
+Y = outp$x
 
 prop = 1
 epsilon = 1e-3
-nrun=200
+nrun=20000
 burn=1
 thin = 1
 output = "numFactors"
@@ -62,4 +62,5 @@ out = MGSPsamp(p, n, k, as, bs, df, ad1, bd1, ad2, bd2, adf, bdf,
                b0, b1, sp, nrun, burn, thin, prop, epsilon, ps, Sigma, Lambda, 
                meta, veta, psijh, theta, tauh, Plam, Y, scaleMat, output) 
 
-
+source("safefact.R")
+out2 = safefact(Y = outp$x, nrun = nrun, burn = burn, output=output)

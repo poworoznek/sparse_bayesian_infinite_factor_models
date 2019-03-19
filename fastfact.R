@@ -112,7 +112,7 @@ fastfact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     
     for(h in 2:k) {
       ad = ad2 + 0.5*p*(k-h+1)
-      bd = bd2 * theta[h-1] + 0.5 * theta[h] * sum(tauh[h:k]*colSums(mat[,h:k, drop = F]))
+      bd = bd2 + 0.5 * theta[h] * sum(tauh[h:k]*colSums(mat[,h:k, drop = F]))
       theta[h] = 1 / rgamma(1,ad,bd)
       tauh = 1 / cumprod(theta)
     }
