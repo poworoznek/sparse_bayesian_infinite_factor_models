@@ -48,7 +48,7 @@ Rcpp::List MGSPsamp(int p, int n, int k,
   int ind = 0;
   
   // --- initialise loop objects --- //
-  mat Lmsg, Veta1, Q, R, S, Veta, Meta,
+  mat Lmsg, Veta1, S, Veta, Meta,
   noise, eta, eta2, Llamt, Llam,Lambda_sq,
   shape, matr, Ytil, bsvec, lint, lind, Omega;
   
@@ -65,20 +65,19 @@ Rcpp::List MGSPsamp(int p, int n, int k,
   bool thincheck, printcheck;
   
   // --- loop --- //
-  for(int i=0; i<nrun; ++i, ++start){
+  for(int i=0; i<nrun; i++, start++){
     // --- UPDATE ETA --- //
     Lmsg = Lambda.each_col() % ps;
     Veta1 = eye<mat>(k,k) + Lmsg.t() * Lambda;
-    qr(Q, R, trimatu(chol(Veta1)));
-    S = inv(trimatu(R));
+    S = inv(trimatu(chol(Veta1)));
     Veta = S * S.t();
     Meta = Y * Lmsg * Veta;
-    noise = mat(n, k, fill::randn);
+    noise = randn(n, k);
     eta = Meta + noise * S.t();
     
     // --- UPDATE LAMBDA --- //
     eta2 = eta.t() * eta;    // prepare eta crossproduct before the loop
-    for(int j = 0; j < p; ++j) {
+    for(int j = 0; j < p; j++) {
       Llamt = trimatu(chol(diagmat(Plam.row(j)) + ps(j)*eta2));
       Llam = trimatl(Llamt.t());
       Lambda.row(j) = (solve(Llamt, randn<vec>(k)) +
@@ -98,11 +97,11 @@ Rcpp::List MGSPsamp(int p, int n, int k,
     // --- UPDATE THETA & TAUH --- //
     matr = psijh % square(Lambda);
     ad = ad1 + 0.5 * p * k;
-    bd = bd1 + 0.5 / theta[0] * sum(tauh.t() % sum(matr, 0));
-    theta[0] = randg(distr_param(ad, 1 / bd));
+    bd = bd1 + 0.5 / theta(0) * sum(tauh.t() % sum(matr, 0));
+    theta(0) = randg(distr_param(ad, 1 / bd));
     tauh = cumprod(theta);
     
-    for(int h=1; h<k; ++h) {
+    for(int h=1; h<k; h++) {
       ad = ad2 + 0.5 * p *(k-h);
       tauh_sub = tauh.subvec(h,k-1);
       bd = bd2 + 0.5 / theta(h) * sum(tauh_sub.t() % sum(matr.cols(h,k-1), 0));
@@ -113,7 +112,7 @@ Rcpp::List MGSPsamp(int p, int n, int k,
     // --- UPDATE SIGMA --- //
     Ytil = Y - eta * Lambda.t();
     bsvec =  bs + 0.5 * sum(square(Ytil), 0);
-    for(int l = 0; l < p ; ++l){
+    for(int l = 0; l < p ; l++){
       ps(l) = randg(distr_param(as + 0.5*n, 1 / bsvec(0,l)));
     }
     Sigma = diagmat(1/ps);
@@ -129,7 +128,7 @@ Rcpp::List MGSPsamp(int p, int n, int k,
     lind = sum(lint, 0) / p;  // proportion of elements in each column less than eps in magnitude
     vecs = lind.row(0) >= prop;
     num = 0;
-    for(int h = 0; h < k ; ++h){
+    for(int h = 0; h < k ; h++){
       num += vecs(0,h);
     }
     lind2 = arma::conv_to<arma::vec>::from(lind);

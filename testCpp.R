@@ -78,9 +78,11 @@ plot(out2$numFact)
 plot(out3$numFact)
 
 t1 ; t2
-# 110.508 150.941 
+# 104.570 150.941 
 
 out4 = fastfact(Y = outp$x, nrun = nrun, burn = burn, output=output, dump = TRUE, buffer = 1000)
 str(out4)
 plot(out4)
 
+Rcpp::sourceCpp('profiler.cpp')
+start_pro
