@@ -52,15 +52,35 @@ meta = matrix(0,nrow = n, ncol = k)
 veta = diag(k)                                 # latent factor distribution = standard normal
 
 psijh = matrix(rgamma(p*k, df/2, df/2), nrow = p, ncol = k)     # local shrinkage coefficients
-theta = c(1 / rgamma(1,ad1,bd1), 1 / rgamma(k-1,ad2,bd2))       # gobal shrinkage coefficients multilpliers
-tauh = 1 / cumprod(theta)                                       # global shrinkage coefficients
+theta = c(rgamma(1,ad1,bd1), rgamma(k-1,ad2,bd2))       # gobal shrinkage coefficients multilpliers
+tauh = cumprod(theta)                                       # global shrinkage coefficients
 Plam = t(t(psijh) * (tauh))                                     # precision of loadings rows
 
+start = 0
+
+par(mfrow = c(3,1))
 Rcpp::sourceCpp('MGSPc.cpp')
+#out = MGSPsamp(p, n, k, as, bs, df, ad1, bd1, ad2, bd2, adf, bdf, 
+#               b0, b1, sp, nrun, burn, thin, prop, epsilon, ps, Sigma, Lambda, 
+#               meta, veta, psijh, theta, tauh, Plam, Y, scaleMat, output, start) 
 
-out = MGSPsamp(p, n, k, as, bs, df, ad1, bd1, ad2, bd2, adf, bdf, 
-               b0, b1, sp, nrun, burn, thin, prop, epsilon, ps, Sigma, Lambda, 
-               meta, veta, psijh, theta, tauh, Plam, Y, scaleMat, output) 
+t1 = system.time({
+  source("fastfact.R")
+  out2 = fastfact(Y = outp$x, nrun = nrun, burn = burn, output=output)
+})
+t2 = system.time({
+  source("safefact.R")
+  out3 = safefact(Y = outp$x, nrun = nrun, burn = burn, output=output)
+})
 
-source("safefact.R")
-out2 = safefact(Y = outp$x, nrun = nrun, burn = burn, output=output)
+plot(out$numFact)
+plot(out2$numFact)
+plot(out3$numFact)
+
+t1 ; t2
+# 110.508 150.941 
+
+out4 = fastfact(Y = outp$x, nrun = nrun, burn = burn, output=output, dump = TRUE, buffer = 1000)
+str(out4)
+plot(out4)
+

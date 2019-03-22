@@ -19,7 +19,8 @@ Rcpp::List MGSPsamp(int p, int n, int k,
                     arma::mat veta, arma::mat psijh,
                     arma::vec theta, arma::vec tauh,
                     arma::mat Plam,arma::mat Y,
-                    arma::mat scaleMat, Rcpp::StringVector output){
+                    arma::mat scaleMat, Rcpp::StringVector output, 
+                    int start){
   // --- initialise output objects --- //
   Rcpp::StringVector cm = "covMean";
   Rcpp::StringVector cv = "covSamples";
@@ -35,10 +36,9 @@ Rcpp::List MGSPsamp(int p, int n, int k,
   
   sp -= 1;
   mat COVMEAN;
-  cube OMEGA;
+  cube OMEGA, SIGMA;
   Rcpp::List LAMBDA;
-  cube SIGMA(p, p, sp, fill::zeros);
-  vec K(sp, fill::zeros);
+  vec K(sp);
   
   if(covm) mat COVMEAN(p, p, fill::zeros);
   if(cov) cube OMEGA(p, p, sp, fill::zeros);
@@ -48,9 +48,9 @@ Rcpp::List MGSPsamp(int p, int n, int k,
   int ind = 0;
   
   // --- initialise loop objects --- //
-  mat Lmsg, Veta1, Tmat, Q, R, S, Veta, Meta,
-  noise, eta, eta2, Llamt, Lambda_sq, shape,
-  matr, Ytil, bsvec, lint, lind, Omega;
+  mat Lmsg, Veta1, Q, R, S, Veta, Meta,
+  noise, eta, eta2, Llamt, Llam,Lambda_sq,
+  shape, matr, Ytil, bsvec, lint, lind, Omega;
   
   umat llog, vecs;
   
@@ -62,16 +62,15 @@ Rcpp::List MGSPsamp(int p, int n, int k,
   
   int num;
   
-  bool thincheck;
+  bool thincheck, printcheck;
   
   // --- loop --- //
-  for(int i=0; i<nrun; ++i){
+  for(int i=0; i<nrun; ++i, ++start){
     // --- UPDATE ETA --- //
     Lmsg = Lambda.each_col() % ps;
     Veta1 = eye<mat>(k,k) + Lmsg.t() * Lambda;
-    Tmat = chol(Veta1);
-    qr(Q, R, Tmat);
-    S = inv(R);
+    qr(Q, R, trimatu(chol(Veta1)));
+    S = inv(trimatu(R));
     Veta = S * S.t();
     Meta = Y * Lmsg * Veta;
     noise = mat(n, k, fill::randn);
@@ -80,9 +79,10 @@ Rcpp::List MGSPsamp(int p, int n, int k,
     // --- UPDATE LAMBDA --- //
     eta2 = eta.t() * eta;    // prepare eta crossproduct before the loop
     for(int j = 0; j < p; ++j) {
-      Llamt = chol(diagmat(Plam.row(j)) + ps(j)*eta2);
+      Llamt = trimatu(chol(diagmat(Plam.row(j)) + ps(j)*eta2));
+      Llam = trimatl(Llamt.t());
       Lambda.row(j) = (solve(Llamt, randn<vec>(k)) +
-        solve(Llamt, solve(Llamt.t(), ps(j) * eta.t() * Y.col(j)))).t();
+        solve(Llamt, solve(Llam, ps(j) * eta.t() * Y.col(j)))).t();
     }
     
     // --- UPDATE psihj --- //
@@ -112,7 +112,7 @@ Rcpp::List MGSPsamp(int p, int n, int k,
     
     // --- UPDATE SIGMA --- //
     Ytil = Y - eta * Lambda.t();
-    bsvec =  bs + 0.5 * sum(pow(Ytil,2), 0);
+    bsvec =  bs + 0.5 * sum(square(Ytil), 0);
     for(int l = 0; l < p ; ++l){
       ps(l) = randg(distr_param(as + 0.5*n, 1 / bsvec(0,l)));
     }
@@ -122,7 +122,7 @@ Rcpp::List MGSPsamp(int p, int n, int k,
     Plam = psijh.each_row() % tauh.t();
     
     // --- ADAPT K --- //
-    prob = 1 / std::exp(b0 + b1 * (i + 1));            // probability of adapting
+    prob = 1 / std::exp(b0 + b1 * (start + 1));            // probability of adapting
     uu = randu();
     llog = abs(Lambda) < epsilon;
     lint = arma::conv_to<arma::mat>::from(llog);
@@ -159,6 +159,7 @@ Rcpp::List MGSPsamp(int p, int n, int k,
         }
       }
     }
+    
     thincheck = i - std::floor(i/thin) * thin; // % operator stolen by arma
     if(!thincheck && (i > burn)) {
       Omega = (Lambda * Lambda.t() + Sigma) * scaleMat;
@@ -169,11 +170,22 @@ Rcpp::List MGSPsamp(int p, int n, int k,
       if(nfa) K(ind) = k;
       ind += 1;
     }
+    
+    printcheck = (start+1) % 1000;
+    if(!printcheck){
+      cout << (start+1) << endl;
+    }
   }
+  
+  Rcpp::List ls = Rcpp::List::create(ps, Sigma, Lambda, meta, 
+                                     veta, psijh, theta, tauh, 
+                                     Plam, k);
+  
   return Rcpp::List::create(Rcpp::Named("covMean") = COVMEAN,
                             Rcpp::Named("covSamps") = OMEGA,
                             Rcpp::Named("factSamps") = LAMBDA,
                             Rcpp::Named("sigSamps") = SIGMA,
-                            Rcpp::Named("numFact") = K);
+                            Rcpp::Named("numFact") = K,
+                            Rcpp::Named("lastState") = ls);
 }
 
