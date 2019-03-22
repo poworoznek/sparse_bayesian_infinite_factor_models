@@ -40,10 +40,9 @@ Rcpp::List MGSPsamp(int p, int n, int k,
   Rcpp::List LAMBDA;
   vec K(sp);
   
-  if(covm) mat COVMEAN(p, p, fill::zeros);
-  if(cov) cube OMEGA(p, p, sp, fill::zeros);
-  if(fac) Rcpp::List LAMBDA;
-  if(sig) cube SIGMA(p, p, sp, fill::zeros);
+  if(covm) COVMEAN = zeros<mat>(p, p);
+  if(cov) OMEGA = zeros<cube>(p, p, sp);
+  if(sig) SIGMA = zeros<cube>(p, p, sp);
   if(nfa) vec K = zeros<vec>(sp);
   int ind = 0;
   
@@ -137,7 +136,7 @@ Rcpp::List MGSPsamp(int p, int n, int k,
         k = k + 1;
         Lambda.resize(p, k);
         Lambda.col(k-1) = zeros<vec>(p);
-        eta.resize(p, k);
+        eta.resize(n, k);
         eta.col(k-1) = randn(n);
         psijh.resize(p, k);
         psijh.col(k-1) = randg(p,distr_param(df/2,1/(df/2)));
@@ -161,8 +160,8 @@ Rcpp::List MGSPsamp(int p, int n, int k,
     
     thincheck = i - std::floor(i/thin) * thin; // % operator stolen by arma
     if(!thincheck && (i > burn)) {
-      Omega = (Lambda * Lambda.t() + Sigma) * scaleMat;
-      if(covm) COVMEAN += Omega / sp;
+      Omega = (Lambda * Lambda.t() + Sigma) % scaleMat;
+      if(covm) COVMEAN += Omega / std::max(sp+1, 1);
       if(cov) OMEGA.slice(ind) = Omega;
       if(fac) LAMBDA[ind] = Lambda;
       if(sig) SIGMA.slice(ind) = Sigma;
