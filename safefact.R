@@ -78,8 +78,7 @@ safefact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     Lmsg = Lambda * ps
     Veta1 = diag(k) + t(Lmsg) %*% Lambda
     Tmat = chol(Veta1)
-    R = qr.R(qr(Tmat))
-    S = solve(R)
+    S = backsolve(Tmat, diag(k))
     Veta = S %*% t(S)                                               # Veta = inv(Veta1)
     Meta = Y %*% Lmsg %*% Veta                                      # n x k 
     eta = Meta + matrix(rnorm(n*k), nrow = n, ncol = k) %*% t(S)    # update eta in a block
@@ -90,10 +89,10 @@ safefact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     
     for(j in 1:p) {
       Llamt = chol(diag(Plam[j,]) + ps[j]*eta2)
-      Lambda[j,] = t(solve(Llamt,
+      Lambda[j,] = t(backsolve(Llamt,
                            zlams[1:k + (j-1)*k]) + 
-                       solve(Llamt,
-                             solve(t(Llamt),
+                       backsolve(Llamt,
+                             forwardsolve(t(Llamt),
                                    ps[j] * t(eta) %*% Y[,j])))
     }
     
