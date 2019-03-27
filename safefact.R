@@ -76,15 +76,15 @@ safefact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     
     # -- Update eta -- #
     Lmsg = Lambda * ps
-    Veta1 = diag(k) + t(Lmsg) %*% Lambda
+    Veta1 = diag(k) + crossprod(Lmsg, Lambda)
     Tmat = chol(Veta1)
     S = backsolve(Tmat, diag(k))
-    Veta = S %*% t(S)                                               # Veta = inv(Veta1)
+    Veta = tcrossprod(S)                                              # Veta = inv(Veta1)
     Meta = Y %*% Lmsg %*% Veta                                      # n x k 
     eta = Meta + matrix(rnorm(n*k), nrow = n, ncol = k) %*% t(S)    # update eta in a block
     
     # -- update Lambda (rue & held) -- #
-    eta2 = t(eta) %*% eta    # prepare eta crossproduct before the loop
+    eta2 = crossprod(eta)    # prepare eta crossproduct before the loop
     zlams = rnorm(k*p)       # generate normal draws all at once 
     
     for(j in 1:p) {
@@ -118,7 +118,7 @@ safefact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     }
     
     # -- Update Sigma -- #
-    Ytil = Y - eta %*% t(Lambda)
+    Ytil = Y - tcrossprod(eta, Lambda)
     ps= rgamma(p, as + 0.5*n, bs+0.5*colSums(Ytil^2))
     Sigma=diag(1/ps)
     
@@ -156,7 +156,7 @@ safefact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     
     # -- save sampled values (after thinning) -- #
     if((i %% thin == 0) & (i > burn)) {
-      Omega = (Lambda %*%  t(Lambda) + Sigma) * scaleMat
+      Omega = (tcrossprod(Lambda) + Sigma) * scaleMat
       if(any(output %in% "covMean")) COVMEAN = COVMEAN + Omega / sp
       if(any(output %in% "covSamples")) OMEGA[,,ind] = Omega
       if(any(output %in% "factSamples")) LAMBDA[[ind]] = Lambda

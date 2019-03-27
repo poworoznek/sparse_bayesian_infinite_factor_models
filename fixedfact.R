@@ -17,7 +17,7 @@
 fixedfact = function(Y, nrun, burn, thin = 1, 
                  k, output = "covMean", 
                  covfilename = "Omega.rds", factfilename = "Lambda.rds", 
-                 sigfilename = "Sigma.rds"){
+                 sigfilename = "Sigma.rds", verbose = TRUE){
   
   p = ncol(Y)
   n = nrow(Y)

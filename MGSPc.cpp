@@ -20,7 +20,7 @@ Rcpp::List MGSPsamp(int p, int n, int k,
                     arma::vec theta, arma::vec tauh,
                     arma::mat Plam,arma::mat Y,
                     arma::mat scaleMat, Rcpp::StringVector output, 
-                    int start){
+                    int start, bool verbose){
   // --- initialise output objects --- //
   Rcpp::StringVector cm = "covMean";
   Rcpp::StringVector cv = "covSamples";
@@ -170,7 +170,7 @@ Rcpp::List MGSPsamp(int p, int n, int k,
     }
     
     printcheck = (start+1) % 1000;
-    if(!printcheck){
+    if(!printcheck && verbose){
       cout << (start+1) << endl;
     }
   }

@@ -14,10 +14,10 @@ Y = outp$x
 
 prop = 1
 epsilon = 1e-3
-nrun=20000
+nrun=2000
 burn=1
 thin = 1
-output = "numFactors"
+output = "covMean"
 
 p = ncol(Y)
 n = nrow(Y)
@@ -86,3 +86,13 @@ plot(out4)
 
 Rcpp::sourceCpp('profiler.cpp')
 start_pro
+
+Lambda = matrix(rnorm(10*100), nrow = 100)
+Sigma = diag(100)
+Omega = Lambda %*% t(Lambda) + Sigma
+Y = chol(Omega) %*%  matrix(rnorm(100*100), nrow = 100)
+
+output = fastfact(Y, nrun = 1000, burn = 500)
+mean((Omega - output$covMean)^2)
+
+

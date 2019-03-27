@@ -16,10 +16,10 @@
 #            factfilename: optional filename for factor matrix samples;
 #            sigfilename: optional filename for sigma matrix samples;
 
-fastfact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1, 
+fastfact = function(Y, nrun, burn, thin = 1, prop = 1, epsilon = 1e-3,
                  kinit = NULL, output = "covMean", 
                  covfilename = "Omega.rds", factfilename = "Lambda.rds", 
-                 sigfilename = "Sigma.rds",
+                 sigfilename = "Sigma.rds", verbose = TRUE,
                  dump = FALSE, buffer = 10000){
   
   p = ncol(Y)
@@ -63,7 +63,8 @@ fastfact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
   if(!dump){
     coutput = MGSPsamp(p, n, k, as, bs, df, ad1, bd1, ad2, bd2, adf, bdf, 
                        b0, b1, sp, nrun, burn, thin, prop, epsilon, ps, Sigma, Lambda, 
-                       meta, veta, psijh, theta, tauh, Plam, Y, scaleMat, output, start) 
+                       meta, veta, psijh, theta, tauh, Plam, Y, scaleMat, output, start,
+                       verbose) 
     COVMEAN = coutput$covMean
     OMEGA = coutput$covSamps
     LAMBDA = coutput$factSamps
@@ -99,7 +100,8 @@ fastfact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     for(run in 1:runs){
       coutput = MGSPsamp(p, n, k, as, bs, df, ad1, bd1, ad2, bd2, adf, bdf, 
                          b0, b1, sp, nrun, burn, thin, prop, epsilon, ps, Sigma, Lambda, 
-                         meta, veta, psijh, theta, tauh, Plam, Y, scaleMat, output, start)
+                         meta, veta, psijh, theta, tauh, Plam, Y, scaleMat, output, start,
+                         verbose)
       start = start + buffer
       burned = burn - buffer
       burn = max(1, burned)
