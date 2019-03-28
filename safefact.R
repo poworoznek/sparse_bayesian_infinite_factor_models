@@ -81,7 +81,9 @@ safefact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     S = backsolve(Tmat, diag(k))
     Veta = tcrossprod(S)                                              # Veta = inv(Veta1)
     Meta = Y %*% Lmsg %*% Veta                                      # n x k 
-    eta = Meta + matrix(rnorm(n*k), nrow = n, ncol = k) %*% t(S)    # update eta in a block
+    eta = Meta + tcrossprod(matrix(rnorm(n*k), 
+                                   nrow = n, 
+                                   ncol = k), S)                    # update eta in a block
     
     # -- update Lambda (rue & held) -- #
     eta2 = crossprod(eta)    # prepare eta crossproduct before the loop
@@ -89,11 +91,10 @@ safefact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     
     for(j in 1:p) {
       Llamt = chol(diag(Plam[j,]) + ps[j]*eta2)
-      Lambda[j,] = t(backsolve(Llamt,
-                           zlams[1:k + (j-1)*k]) + 
+      Lambda[j,] = t(backsolve(Llamt, zlams[1:k + (j-1)*k]) + 
                        backsolve(Llamt,
                              forwardsolve(t(Llamt),
-                                   ps[j] * t(eta) %*% Y[,j])))
+                                   ps[j] * crossprod(eta, Y[,j]))))
     }
     
     #------Update psi_{jh}'s------#

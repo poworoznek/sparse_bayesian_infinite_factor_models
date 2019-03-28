@@ -15,6 +15,19 @@ n = as.numeric(n)
 nrun=20000
 burn=5000
 thin=1
+
+Rcpp::sourceCpp("MGSPc.cpp")
+source("fastfact.R")
+source("safefact.R")
+
+t1 = system.time({output = safefact(Y = dat, nrun = nrun, burn = burn, verbose = FALSE)})
+msesafe = mean((output$covMean - Ot)^2)
+
+t2 = system.time({output2 = fastfact(Y = dat, nrun = nrun, burn = burn, verbose = FALSE)})
+msecpp = mean((output2$covMean - Ot)^2)
+
+t1;t2
+
 sp =(nrun - burn)/thin # number of posterior samples
 
 kinit = rep(floor(log(p)*3),rep)                 # number of factors to start with
@@ -33,7 +46,7 @@ adrep = matrix(0,nrow = rep,ncol = 1)                           # number of adap
 OMEGA = array(dim = c(p, p, sp))
 
 #library(profvis)
-profvis({
+t3 = system.time({
   for(g in 1:rep) {
     
     cat("start replicate",g, "\n")
