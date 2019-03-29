@@ -121,7 +121,7 @@ safefact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     # -- Update Sigma -- #
     Ytil = Y - tcrossprod(eta, Lambda)
     ps= rgamma(p, as + 0.5*n, bs+0.5*colSums(Ytil^2))
-    Sigma=diag(1/ps)
+    Sigma = diag(1/ps)
     
     #---update precision parameters----#
     Plam = t(t(psijh) * tauh)
@@ -157,7 +157,7 @@ safefact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     
     # -- save sampled values (after thinning) -- #
     if((i %% thin == 0) & (i > burn)) {
-      Omega = (tcrossprod(Lambda) + Sigma) * scaleMat
+      if(any(output %in% c("covMean", "covSamples"))) Omega = (tcrossprod(Lambda) + Sigma) * scaleMat
       if(any(output %in% "covMean")) COVMEAN = COVMEAN + Omega / sp
       if(any(output %in% "covSamples")) OMEGA[,,ind] = Omega
       if(any(output %in% "factSamples")) LAMBDA[[ind]] = Lambda

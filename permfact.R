@@ -7,7 +7,7 @@
 #            stop: stopping criterion, largest reasonable norm for an aligned cluster mean
 #            itermax: maximum number of permutations to search, can be larger than vector memory
 
-permfact = function(lambda, pivot, stop, itermax = 1000000){
+permfact = function(lambda, pivot, stop, itermax = 100000){
   k = ncol(lambda[[1]])
   p = nrow(lambda[[1]])
   m = length(lambda)
