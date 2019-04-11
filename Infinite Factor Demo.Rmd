@@ -1,0 +1,37 @@
+---
+title: "Infinite Factor Demo"
+author: "Evan Poworoznek"
+date: "4/11/2019"
+output: html_document
+---
+
+```{r include = FALSE}
+library(tidyverse)
+library(bayesSurv)
+library(GIGrvg)
+library(statmod)
+library(MCMCpack)
+source("regint.R")
+source("clustalign.R")
+source("mcrotfact.R")
+```
+
+```{r}
+k = 4
+p = 20
+n = 100
+
+lambda = matrix(rnorm(p*k, 0, 0.01), ncol = k)
+lambda[sample.int(p, 40, replace = TRUE) +
+       p*(sample.int(k, 40, replace = TRUE)-1)] = rnorm(40, 0, 1)
+lambda[1:7, 1] = rnorm(7, 2, 0.1)
+lambda[8:14, 2] = rnorm(7, 2, 0.1)
+lambda[15:20, 3] = rnorm(6, 2, 0.1)
+lambda[,4] = rnorm(p, 0, 1)
+image(t(lambda))
+```
+
+
+
+
+
