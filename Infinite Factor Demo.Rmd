@@ -86,9 +86,8 @@ Omega_hat = apply(gibbs$Omega_bayes, c(2,3), mean)
 cbind(beta_true,beta_hat)
 plot(beta_true,beta_hat)
 Omega_true;Omega_hat
-cbind(Omega_true,Omega_hat)
 Omega_hat[11,5]
-plot(Omega_true,Omega_hat)
+plot(gibbs$Omega_bayes[,11,5],ty="l")
 ```
 
 
