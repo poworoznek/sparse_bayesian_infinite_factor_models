@@ -2,18 +2,19 @@
 # first method based on varimax rotation 
 # second method from BADFM (Aßmann, Boysen- Hogrefe, and Pape 2014)
 
-# ARGUMENTS: lambdafile: file path to factor matrix sample list;
+# ARGUMENTS: lambda: file path to factor matrix sample list (or just the list);
 #            method: rotation method; one of c("varimax", "BADFM");
 #            tolerance: rotation algorithm stopping tolerance;
 #            maxiter: maximum number of algorithm iterations;
 #            ncores: number of cores
 #            normalize: logical. whether to normalize lambda samples
+#            file: logical. whether lambda was passed directly or as an Rds
 
-mcrotfact = function(lambdafile, method = "BADFM", 
+mcrotfact = function(lambda, method = "BADFM", 
                      tolerance = 1e-5, maxiter = 100, ncores = 1,
-                     normalize = FALSE){
+                     normalize = FALSE, file = TRUE){
   library(parallel)
-  lambda = readRDS(lambdafile) # read in factor samples
+  if(file) lambda = readRDS(lambdafile) # read in factor samples
   n = length(lambda)           # initialize shared attributes
   if(normalize) lambda = mclapply(lambda, scale,
                                   mc.cores = ncores)
