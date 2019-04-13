@@ -20,10 +20,7 @@ source("mcrotfact.R")
 
 # Generate the data
 
-
 In our simulated study, we observe three families of chemicals, that show high correlation within each family. In particular, we can think of each chemical of a linear combinantion of latent factors. 
-
-
 
 
 ```{r}
@@ -106,7 +103,10 @@ generate_DL_reg(S = 10000, k = 10, p = 20,
                 trace = FALSE, every = 500)
 ```
 
+
+
 ## Regression Example 
+
 ```{r}
 source("regint_DL_last.R")
 
