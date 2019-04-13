@@ -1,8 +1,9 @@
 ---
-title: "Infinite Factor Demo"
-author: "Evan Poworoznek"
+title: "Factor for INteractions (FIN) and Postprocessing"
+author: "Federico Ferrari and Evan Poworoznek"
 date: "4/11/2019"
-output: html_document:
+output: 
+   html_document:
     toc: true
     toc_float: true
 ---
@@ -91,7 +92,7 @@ FIN can be generalized to allow for higher order interactions, allowing increasi
 
 ```{r}
 source("generate_DL_reg.R")
-generate_DL_reg(S = 10000, k = 5, p = 20,
+generate_DL_reg(S = 100, k = 5, p = 20,
                 a_DL = 0.5, var_omega = 5,
                 as = 1, bs = 0.3,
                 trace = FALSE, every = 500)
@@ -99,7 +100,7 @@ generate_DL_reg(S = 10000, k = 5, p = 20,
 
 
 ```{r, echo = FALSE}
-generate_DL_reg(S = 10000, k = 10, p = 20,
+generate_DL_reg(S = 100, k = 10, p = 20,
                 a_DL = 0.5, var_omega = 5,
                 as = 1, bs = 0.3,
                 trace = FALSE, every = 500)
@@ -115,7 +116,7 @@ MAYBE RECOVERY RATE
 ```{r}
 source("regint_DL_last.R")
 
-nrun = 5000; burn = 2000; thin = 1; k = 5
+nrun = 501; burn = 1; thin = 1; k = 5
 gibbs = gibbs_DL(y, X ,nrun, burn, thin = 1, 
                delta_rw = 0.04, epsilon_rw = 0.5,
                a = 1/2, k = k)
