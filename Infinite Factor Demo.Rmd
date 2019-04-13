@@ -20,7 +20,9 @@ source("mcrotfact.R")
 
 # Generate the data
 
-In our simulated study, we observe three families of chemicals, that show high correlation within each family. In particular, we can think of each chemical of a linear combinantion of latent factors. 
+In our simulated study, we observe three families of chemicals, that show high correlation within each family. We assume that each group of chemicals
+
+In particular, we can think of each chemical of a linear combination of latent factors. 
 
 
 ```{r}
@@ -66,7 +68,7 @@ Let $y_i$ denote a continuous health response for individual $i$, let $X_i = (x_
 & X_i = \Lambda \eta_i+ \epsilon_i,   \quad  \epsilon_i \sim N_p(0,\Psi), \\
 & \eta_i \sim N_k(0,I), \nonumber
 \end{align}
-We can show that induced regression of $X_i$ on $y_i$ is indeed a quadratic regression, i.e. :
+where $\Psi = diag(\sigma_1^2,\cdots, \sigma_p^2)$We can show that induced regression of $X_i$ on $y_i$ is indeed a quadratic regression, i.e. :
 $$E(y_i | X_i) = tr (\Omega V)+(\omega^T A) X_i + X_i^T (A^T \Omega A) X_i$$ 
 where $V = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1}$ and $A = V \Lambda^T \Psi^{-1}  = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1} \Lambda^T \Psi^{-1}$. Several priors have been proposed for the $p \times k$ factor loadings matrix $\Lambda$, including priors that allow the number of factors to be equal to $+ \infty$ (add REFs). We choose the Dirichlet-Laplace (DL) prior of (REF) row-wise for $\Lambda$, corresponding to
 \begin{align*}
@@ -83,18 +85,12 @@ FIN can be generalized to allow for higher order interactions, allowing increasi
 
 ```{r}
 source("generate_DL_reg.R")
-generate_DL_reg(S = 10000, k = 15, p = 20,
-                a_DL = 0.5, var_omega = 5,
-                as = 1, bs = 0.3,
-                trace = FALSE, every = 500)
-```
-
-```{r, echo = FALSE}
 generate_DL_reg(S = 10000, k = 5, p = 20,
                 a_DL = 0.5, var_omega = 5,
                 as = 1, bs = 0.3,
                 trace = FALSE, every = 500)
 ```
+
 
 ```{r, echo = FALSE}
 generate_DL_reg(S = 10000, k = 10, p = 20,
