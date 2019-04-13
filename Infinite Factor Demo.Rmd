@@ -16,7 +16,13 @@ source("clustalign.R")
 source("mcrotfact.R")
 ```
 
-#Generate the data
+# Generate the data
+
+
+In our simulated study, we observe three families of chemicals, that show high correlation within each family. In particular, we can think of each chemical of a linear combinantion of latent factors. 
+
+
+
 
 ```{r}
 k0 = 5
@@ -34,7 +40,7 @@ lambda[,5] = rnorm(p, 0, 0.5)
 image(t(lambda))
 ```
 
-Now we generate the outocome accorting with a linear regression with pairwise interactions
+Now we generate the outocome accorting with a linear regression with pairwise interactions. First family has a positive effect on the health response and second family negative...
 
 ```{r}
 n = 500;
@@ -52,18 +58,19 @@ y = X%*%beta_true + diag(X%*%Omega_true%*%t(X)) +  rnorm(n,0.5)
 ```
 
 
-# FIN - Bayesian Factor Model for INteractions
-Model
+# FIN - Bayesian Factor Model for INteractions (FIN)
+
+Let $y_i$ denote a continuous health response for individual $i$, let $X_i = (x_{i1},\cdots,x_{ip})$ denote a vector of exposure measurements. We propose a latent factor joint model, which includes shared factors in both the predictor and response components while assuming conditional independence. We include interactions among latent variables in the response component. We also assume that, given the latent variables, the explanatory variables and the response are continuous and normally distributed. We assume that the data have been standardized prior to the analysis so that we omit the intercept.
 \begin{align}
-& y_i = \eta_i^T \omega + \eta_i^T \Omega \eta_i +\epsilon_{y,i},  \quad \epsilon_{y,i} \sim N(0,\sigma^2) \nonumber  \\ 
-& X_i = \Lambda \eta_i+ \epsilon_i,   \quad  \epsilon_i \sim N_p(0,\Psi) \\
-& \eta_i \sim N_k(0,I) \nonumber
+& y_i = \eta_i^T \omega + \eta_i^T \Omega \eta_i +\epsilon_{y,i},  \quad \epsilon_{y,i} \sim N(0,\sigma^2) \nonumber,  \\ 
+& X_i = \Lambda \eta_i+ \epsilon_i,   \quad  \epsilon_i \sim N_p(0,\Psi), \\
+& \eta_i \sim N_k(0,I), \nonumber
 \end{align}
+We can show that induced regression of $X_i$ on $y_i$ is indeed a quadratic regression, i.e. :
+$$E(y_i | X_i) = tr (\Omega V)+(\omega^T A) X_i + X_i^T (A^T \Omega A) X_i$$ 
+where $V = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1}$ and $A = V \Lambda^T \Psi^{-1}  = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1} \Lambda^T \Psi^{-1}$.
 
-The induced regression is $E(y_i | X_i) = tr (\Omega V)+(\omega^T A) X_i + X_i^T (A^T \Omega A) X_i$ where $V = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1}$ and $A = V \Lambda^T \Psi^{-1}  = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1} \Lambda^T \Psi^{-1}$.
-
-
-DL prior
+DL prior, describe row-wise shrinkage.
 \begin{align*}
 \lambda_{j,h} | \phi_j, \tau_j \sim DE(\phi_{j,h} \tau_j) \ \ \ \ \ \ \ h = 1, \cdots, k  \\
 \phi_j \sim Dir(a,\cdots,a) \ \ \ \ \ \ \tau_j \sim Gamma(k a , 1/2)
@@ -71,7 +78,7 @@ DL prior
 
 ```{r}
 source("regint_DL_last.R")
-nrun = 2500; burn = 2000; thin = 1; k = 6
+nrun = 10; burn = 5; thin = 1; k = 6
 gibbs = gibbs_DL(y, X ,nrun, burn, thin = 1, 
                delta_rw = 0.04, epsilon_rw = 0.5,
                a = 1/2, k = k)
