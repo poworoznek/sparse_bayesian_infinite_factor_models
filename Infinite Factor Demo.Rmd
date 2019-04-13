@@ -71,21 +71,46 @@ Let $y_i$ denote a continuous health response for individual $i$, let $X_i = (x_
 \end{align}
 We can show that induced regression of $X_i$ on $y_i$ is indeed a quadratic regression, i.e. :
 $$E(y_i | X_i) = tr (\Omega V)+(\omega^T A) X_i + X_i^T (A^T \Omega A) X_i$$ 
-where $V = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1}$ and $A = V \Lambda^T \Psi^{-1}  = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1} \Lambda^T \Psi^{-1}$.
-
-DL prior, describe row-wise shrinkage.
+where $V = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1}$ and $A = V \Lambda^T \Psi^{-1}  = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1} \Lambda^T \Psi^{-1}$. Several priors have been proposed for the $p \times k$ factor loadings matrix $\Lambda$, including priors that allow the number of factors to be equal to $+ \infty$ (add REFs). We choose the Dirichlet-Laplace (DL) prior of (REF) row-wise for $\Lambda$, corresponding to
 \begin{align*}
-\lambda_{j,h} | \phi_j, \tau_j \sim DE(\phi_{j,h} \tau_j) \ \ \ \ \ \ \ h = 1, \cdots, k  \\
-\phi_j \sim Dir(a,\cdots,a) \ \ \ \ \ \ \tau_j \sim Gamma(k a , 1/2)
+\lambda_{j,h} | \phi_j, \tau_j \sim DE(\phi_{j,h} \tau_j) \quad h = 1, \cdots, k  \\
+\phi_j \sim Dir(a,\cdots,a) \quad \tau_j \sim Gamma(k a , 1/2),
 \end{align*}
+Through the choice of the DL prior, we are inducing near sparsity row-wise in the matrix $\Lambda$. In fact, it is reasonable to assume that each variable loads on a few factors. This does not imply that $\Omega$ will be sparse too. 
+
+## Induced main Effects and Interactions
+
+FIN can be generalized to allow for higher order interactions, allowing increasing shrinkage as the order of interaction increases. In the next plots, we show the induced marginal priors for main effects, pairwise interactions and $3^{rd}$ order interactions when $p = 20$ and $k = 5,10$. The green lines corresponds to $0.25$ and $0.75$ quartiles and the red lines to the $0.05$ and $0.95$. For a fixed $k$, there is increasing shrinkage towards zero with higher orders of interaction. However, we avoid assuming exact sparsity corresponding to zero values of the coefficients, a standard assumption of other methods. Although most of the mass is concentrated around zero, the distributions have heavy tails. We can indeed notice that the form of the priors resembles a mixture model of two normal distributions with different variances, and that we place a higher mixture weight on the normal distribution concentrated around zero as we increase the order of interactions. Also, notice that the priors are flatter as we increase the number of latent factors $k$.
+
+
 
 ```{r}
+source("generate_DL_reg.R")
+generate_DL_reg(S = 10000, k = 15, p = 20,
+                a_DL = 0.5, var_omega = 5,
+                as = 1, bs = 0.3,
+                trace = FALSE, every = 500)
+```
+
+```{r, echo = FALSE}
+generate_DL_reg(S = 10000, k = 5, p = 20,
+                a_DL = 0.5, var_omega = 5,
+                as = 1, bs = 0.3,
+                trace = FALSE, every = 500)
+```
+
+```{r, echo = FALSE}
+generate_DL_reg(S = 10000, k = 10, p = 20,
+                a_DL = 0.5, var_omega = 5,
+                as = 1, bs = 0.3,
+                trace = FALSE, every = 500)
+```
+
+## Regression Example 
+```{r}
 source("regint_DL_last.R")
-<<<<<<< HEAD
-nrun = 10; burn = 5; thin = 1; k = 6
-=======
+
 nrun = 5000; burn = 2000; thin = 1; k = 5
->>>>>>> b2a390730ff8832ef2d4aa1aff665a534f2cc6b7
 gibbs = gibbs_DL(y, X ,nrun, burn, thin = 1, 
                delta_rw = 0.04, epsilon_rw = 0.5,
                a = 1/2, k = k)
