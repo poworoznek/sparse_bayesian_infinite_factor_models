@@ -137,6 +137,7 @@ $(document).ready(function () {
 <pre class="r"><code>library(mvtnorm)
 library(tidyverse)
 library(abind)
+library(parallel)
 source(&quot;safefact.R&quot;)
 source(&quot;fixedfact.R&quot;)
 source(&quot;simulate_data_fxns.R&quot;)
@@ -205,7 +206,7 @@ plot(density(norms.aligned), main = &quot;SVD norms of aligned sample difference
 </div>
 <div id="rotational-identifiability" class="section level4">
 <h4>Rotational Identifiability</h4>
-<p>The package samplers do not impose orthogonality constraints, so the rotational ambiguity in the factor loadings matrix samples must be removed before they represent an interpretable posterior sample. We focus on post-hoc orthogonalization methods in this package. The two implemented rotational schemes have largely different motivations. The Varimax rotation algorithm treats the samples independently and is therefore appropriate for samples with label-switching still present, or nearly-orthogonal samples. The “BADFM” method uses the Orthogonal Procrustes algorithm, utilizing the factor loadings sample mean matrix for the rotations, which are applied to every sample uniformly. Sampling noise that results in increasing the linear dependence between columns is leads to inappropriate, noisy rotations under Varimax rotation, while for well estimated posteriors, rotating based on the sample mean leads to identifiability without the additional noise. Thus the “BADFM” method produces less noisy, more stable identifiable samples in general. The method is performed below.</p>
+<p>The package samplers do not impose orthogonality constraints, so the rotational ambiguity in the factor loadings matrix samples must be removed before they represent an interpretable posterior sample. We focus on post-hoc orthogonalization methods in this package. The two implemented rotational schemes have largely different motivations. The Varimax rotation algorithm treats the samples independently and is therefore appropriate for samples with label-switching still present, or nearly-orthogonal samples. The “BADFM” method uses the Orthogonal Procrustes algorithm, utilizing the factor loadings sample mean matrix for the rotations, which are applied to every sample uniformly. Sampling noise that results in increasing the linear dependence between columns leads to inappropriate, noisy rotations under Varimax rotation, while for well estimated posteriors, rotating based on the sample mean leads to identifiability without the additional noise. Thus the “BADFM” method produces less noisy, more stable identifiable samples in general. The method is performed below.</p>
 <pre class="r"><code>fmean = Reduce(`+`, lambda.aligned) / length(lambda.aligned)
 frot = mcrotfact(lambdafile = &quot;pplsamps.rds&quot;, method = &quot;BADFM&quot;, ncores = 6)
 par(mfrow = c(1, 2))
