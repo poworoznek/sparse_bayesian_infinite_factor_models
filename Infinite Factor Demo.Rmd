@@ -1,8 +1,11 @@
 ---
-title: "Infinite Factor Demo"
-author: "Evan Poworoznek"
+title: "Factor for INteractions (FIN) and Postprocessing"
+author: "Federico Ferrari and Evan Poworoznek"
 date: "4/11/2019"
-output: html_document
+output: 
+   html_document:
+    toc: true
+    toc_float: true
 ---
 
 ```{r include = FALSE}
@@ -18,7 +21,15 @@ source("permuter.R")
 source("mcrotfact.R")
 ```
 
-#Generate the data
+# Generate the data
+
+In our simulated study, we observe three families of chemicals, that show high correlation within each family. We assume that the chemicals assume a latent representation in terms of $5$ latent. let $X_i = (x_{i1},\cdots,x_{ip})$ denote a vector of exposure measurements, we have
+\begin{align}
+X_i = \Lambda \eta_i+ \epsilon_i,   \quad  \epsilon_i \sim N_p(0,\Psi), \\
+\end{align}
+In the next plot we show the $p \times k$ matrix of factor loadings $\Lambda$. In particular, there are "active" $3$ latent factor, each influencing one family of chamicals, and $2$ noise factors.
+
+-CHANGE COLORS: E.G. WHITE FOR ZEROS, BLUE FOR COEFFS >>0 AND RED  << 0 IN ORDER TO SHOW SPARSITY AND NOISE
 
 ```{r}
 set.seed(1)
@@ -37,7 +48,8 @@ lambda[,5] = rnorm(p, 0, 0.5)
 image(t(lambda))
 ```
 
-Now we generate the outocome accorting with a linear regression with pairwise interactions
+Now we generate the outocome accorting with a linear regression with pairwise interactions. We assume that the first family has a positive effect on the health response and second family negative. We add some interactions between the chemicals within and between families. 
+-PLOT THE MATRIX OF INTERACTIONS 
 
 ```{r}
 n = 500;
@@ -55,26 +67,56 @@ y = X%*%beta_true + diag(X%*%Omega_true%*%t(X)) +  rnorm(n,0.5)
 ```
 
 
-# FIN - Bayesian Factor Model for INteractions
-Model
+# FIN - Bayesian Factor Model for INteractions (FIN)
+
+Let $y_i$ denote a continuous health response for individual $i$. We propose a latent factor joint model, which includes shared factors in both the predictor and response components while assuming conditional independence. We include interactions among latent variables in the response component. We also assume that, given the latent variables, the explanatory variables and the response are continuous and normally distributed. We assume that the data have been standardized prior to the analysis so that we omit the intercept.
 \begin{align}
-& y_i = \eta_i^T \omega + \eta_i^T \Omega \eta_i +\epsilon_{y,i},  \quad \epsilon_{y,i} \sim N(0,\sigma^2) \nonumber  \\ 
-& X_i = \Lambda \eta_i+ \epsilon_i,   \quad  \epsilon_i \sim N_p(0,\Psi) \\
-& \eta_i \sim N_k(0,I) \nonumber
+& y_i = \eta_i^T \omega + \eta_i^T \Omega \eta_i +\epsilon_{y,i},  \quad \epsilon_{y,i} \sim N(0,\sigma^2) \nonumber,  \\ 
+& X_i = \Lambda \eta_i+ \epsilon_i,   \quad  \epsilon_i \sim N_p(0,\Psi), \\
+& \eta_i \sim N_k(0,I), \nonumber
 \end{align}
-
-The induced regression is $E(y_i | X_i) = tr (\Omega V)+(\omega^T A) X_i + X_i^T (A^T \Omega A) X_i$ where $V = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1}$ and $A = V \Lambda^T \Psi^{-1}  = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1} \Lambda^T \Psi^{-1}$.
-
-
-DL prior
+where $\Psi = diag(\sigma_1^2,\cdots, \sigma_p^2)$We can show that induced regression of $X_i$ on $y_i$ is indeed a quadratic regression, i.e. :
+$$E(y_i | X_i) = tr (\Omega V)+(\omega^T A) X_i + X_i^T (A^T \Omega A) X_i$$ 
+where $V = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1}$ and $A = V \Lambda^T \Psi^{-1}  = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1} \Lambda^T \Psi^{-1}$. Several priors have been proposed for the $p \times k$ factor loadings matrix $\Lambda$, including priors that allow the number of factors to be equal to $+ \infty$ (add REFs). We choose the Dirichlet-Laplace (DL) prior of (REF) row-wise for $\Lambda$, corresponding to
 \begin{align*}
-\lambda_{j,h} | \phi_j, \tau_j \sim DE(\phi_{j,h} \tau_j) \ \ \ \ \ \ \ h = 1, \cdots, k  \\
-\phi_j \sim Dir(a,\cdots,a) \ \ \ \ \ \ \tau_j \sim Gamma(k a , 1/2)
+\lambda_{j,h} | \phi_j, \tau_j \sim DE(\phi_{j,h} \tau_j) \quad h = 1, \cdots, k  \\
+\phi_j \sim Dir(a,\cdots,a) \quad \tau_j \sim Gamma(k a , 1/2),
 \end{align*}
+Through the choice of the DL prior, we are inducing near sparsity row-wise in the matrix $\Lambda$. In fact, it is reasonable to assume that each variable loads on a few factors. This does not imply that $\Omega$ will be sparse too. 
+
+## Induced main Effects and Interactions
+
+FIN can be generalized to allow for higher order interactions, allowing increasing shrinkage as the order of interaction increases. In the next plots, we show the induced marginal priors for main effects, pairwise interactions and $3^{rd}$ order interactions when $p = 20$ and $k = 5,10$. The green lines corresponds to $0.25$ and $0.75$ quartiles and the red lines to the $0.05$ and $0.95$. For a fixed $k$, there is increasing shrinkage towards zero with higher orders of interaction. However, we avoid assuming exact sparsity corresponding to zero values of the coefficients, a standard assumption of other methods. Although most of the mass is concentrated around zero, the distributions have heavy tails. We can indeed notice that the form of the priors resembles a mixture model of two normal distributions with different variances, and that we place a higher mixture weight on the normal distribution concentrated around zero as we increase the order of interactions. Also, notice that the priors are flatter as we increase the number of latent factors $k$.
+
+
+
+```{r}
+source("generate_DL_reg.R")
+generate_DL_reg(S = 100, k = 5, p = 20,
+                a_DL = 0.5, var_omega = 5,
+                as = 1, bs = 0.3,
+                trace = FALSE, every = 500)
+```
+
+
+```{r, echo = FALSE}
+generate_DL_reg(S = 100, k = 10, p = 20,
+                a_DL = 0.5, var_omega = 5,
+                as = 1, bs = 0.3,
+                trace = FALSE, every = 500)
+```
+
+
+
+## Regression Example 
+
+ADD PLOTS: ESTIMATED MAIN EFFECTS AND TRUE, SAME WITH INT
+MAYBE RECOVERY RATE
 
 ```{r}
 source("regint_DL_last.R")
-nrun = 5000; burn = 2000; thin = 1; k = 5
+
+nrun = 501; burn = 1; thin = 1; k = 5
 gibbs = gibbs_DL(y, X ,nrun, burn, thin = 1, 
                delta_rw = 0.04, epsilon_rw = 0.5,
                a = 1/2, k = k)
@@ -95,6 +137,9 @@ plot(gibbs$Omega_bayes[,11,5],ty="l")
 
 
 # Postprocessing
+
+- ADD DESCRIPTION OF METHOD
+- COMMENT ON THE RESULT
 
 ```{r}
 lambda_sample = gibbs$Lambda
