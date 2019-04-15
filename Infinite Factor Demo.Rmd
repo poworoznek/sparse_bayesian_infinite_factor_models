@@ -138,6 +138,16 @@ plot(gibbs$Omega_bayes[,11,5],ty="l")
 
 # Postprocessing
 
+Our resulting samples of the factor loadings matrix are not directly summarizable. The original model statement allows post-multiplication of an arbitrary orthogonal matrix and the factor loadings matrix $\Lambda$ without affecting the identifiable elements $V$ and $A$. Because of this, we can think of our posterior as a massively multimodal hypersurface and our sampler can travel between modes as it pleases, and without constraints we see the same sorts of issues as in standard Gaussian Mixture Modeling. Enforcing constraints like a triangular $\Lambda$ can massively limit the class of matrices $V$ and $A$ estmiable by the method.
+
+To avoid enforcing constraints on the model we instead rely on post processing to return the samples of $\Lambda$ to a summarizable form. The forms by which samples of $\Lambda$ can change throughout the Markov Chain fall into three categories: Rotational Ambiguity, Label Switching, and Sign Ambiguity.
+
+For Rotational Ambiguity we rely on previous methods such as Varimax and the Orthogonal Procrustes algorithm to orthogonalize samples. Through these methods, we limit the amount by which samples can vary in their rotations, as they are rotated to be as orthognal as possible. Sampling noise will create and remove small amounts of linear dependence arbitrarily, so this is not guarenteed to rotationally align all samples.
+
+For columnwise Label Switching we introduce a method that clusters the norms of the differences between a pivot matrix (a representative of $\Lambda$) and the samples of $\Lambda$. This clustering massively reduces the computational load in this ordinarily very large solution space ($k!m$ for $m$ samples). These normed differences represent a loss that is minimized over the space of column permutations.
+
+For Sign Ambiguity we augment the Label Switching method to now minimize the previously defined loss over the set of all column permutations crossed with the set of all column sign switches. The resultant solution set has cardinality $k!2^km$, and by utilizing the clustering we largely reduce the $m$ term.
+
 - ADD DESCRIPTION OF METHOD
 - COMMENT ON THE RESULT
 
