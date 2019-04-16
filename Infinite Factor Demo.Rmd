@@ -29,8 +29,6 @@ X_i = \Lambda \eta_i+ \epsilon_i,   \quad  \epsilon_i \sim N_p(0,\Psi), \\
 \end{align}
 In the next plot we show the $p \times k$ matrix of factor loadings $\Lambda$. In particular, there are "active" $3$ latent factor, each influencing one family of chamicals, and $2$ noise factors.
 
--CHANGE COLORS: E.G. WHITE FOR ZEROS, BLUE FOR COEFFS >>0 AND RED  << 0 IN ORDER TO SHOW SPARSITY AND NOISE
-
 ```{r}
 set.seed(1)
 k0 = 5
@@ -45,10 +43,29 @@ lambda[8:14, 2] = rnorm(7, -2, 0.5)
 lambda[15:20, 3] = rnorm(6, 2, 0.5)
 lambda[,4] = rnorm(p, 0, 0.5)
 lambda[,5] = rnorm(p, 0, 0.5)
-image(t(lambda))
+
+library(reshape2)
+library(ggplot2)
+library(latex2exp)
+
+longlambda = melt(lambda)
+ggplot(longlambda, aes(x = Var2, y = Var1)) + 
+  geom_tile(aes(fill=value), colour="grey20") + 
+  scale_fill_gradient2(low = "#3d52bf", high = "#33961b", mid = "white") +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        legend.title = element_text(),
+        plot.title = element_text(hjust = 0.5)) + 
+  labs(fill = " ") +
+  ggtitle(TeX("$\\Lambda$"))
 ```
 
-Now we generate the outocome accorting with a linear regression with pairwise interactions. We assume that the first family has a positive effect on the health response and second family negative. We add some interactions between the chemicals within and between families. 
+Now we generate the outcome accorting with a linear regression with pairwise interactions. We assume that the first family has a positive effect on the health response and second family negative. We add some interactions between the chemicals within and between families. 
 -PLOT THE MATRIX OF INTERACTIONS 
 
 ```{r}
@@ -116,10 +133,10 @@ MAYBE RECOVERY RATE
 ```{r}
 source("regint_DL_last.R")
 
-nrun = 501; burn = 1; thin = 1; k = 5
+nrun = 1500; burn = 500; thin = 1; k = 5
 gibbs = gibbs_DL(y, X ,nrun, burn, thin = 1, 
                delta_rw = 0.04, epsilon_rw = 0.5,
-               a = 1/2, k = k)
+               a = 1, k = k)
 
 ```
 
@@ -148,20 +165,36 @@ For columnwise Label Switching we introduce a method that clusters the norms of 
 
 For Sign Ambiguity we augment the Label Switching method to now minimize the previously defined loss over the set of all column permutations crossed with the set of all column sign switches. The resultant solution set has cardinality $k!2^km$, and by utilizing the clustering we largely reduce the $m$ term.
 
-- ADD DESCRIPTION OF METHOD
-- COMMENT ON THE RESULT
-
 ```{r}
 lambda_sample = gibbs$Lambda
-lambda_sample = lapply(1:500, function(ind) lambda_sample[ind,,])
+lambda_sample = lapply(1:1000, function(ind) lambda_sample[ind,,])
 sample_mean = reduce(lambda_sample, `+`)/length(lambda_sample)
 aligned = clustalign(lambda_sample)
 rotated = mcrotfact(aligned, method = "varimax", file = FALSE)
-par(mfrow = c(1, 3))
-image(t(sample_mean))
-title("sample mean")
-image(t(rotated$mean))
-title("post-processed sample mean")
-image(t(lambda))
-title("original ")
+class(rotated$mean) <- "matrix"
+
+label = "Sample Mean"
+SampleMean = cbind(melt(sample_mean), label)
+label = "Processed Sample Mean"
+PrcessMean = cbind(melt(rotated$mean), label)
+label = "Original Lambda"
+Original = cbind(melt(lambda), label)
+
+ggdf = rbind(SampleMean, RotatedMean, Original)
+
+ggplot(ggdf, aes(x = Var2, y = Var1)) + 
+  facet_grid(cols = vars(label)) +
+  geom_tile(aes(fill=value), colour="grey20") + 
+  scale_fill_gradient2(low = "#3d52bf", high = "#33961b", mid = "white") +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        legend.title = element_text(),
+        plot.title = element_text(hjust = 0.5)) + 
+  labs(fill = " ")
+
 ```
