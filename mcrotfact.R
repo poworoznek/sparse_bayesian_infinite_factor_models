@@ -21,9 +21,11 @@ mcrotfact = function(lambda, method = "BADFM",
   
   if(method == "varimax"){        # Varimax rotations
     Lr = mclapply(lambda,
-                  function(lam) varimax(lam, eps = tolerance)[["loadings"]], 
+                  function(lam) as(varimax(lam, eps = tolerance)[["loadings"]],
+                                   "matrix"), 
                   mc.cores = ncores)
     LrMean = Reduce("+", Lr) / n
+    class(LrMean) = "matrix"
     return(list(samples = Lr, mean = LrMean))
   }
   

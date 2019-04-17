@@ -14,6 +14,10 @@ library(bayesSurv)
 library(GIGrvg)
 library(statmod)
 library(MCMCpack)
+library(reshape2)
+library(ggplot2)
+library(latex2exp)
+source("generate_DL_reg.R")
 source("regint.R")
 source("clustalign.R")
 source("permfact.R")
@@ -23,11 +27,11 @@ source("mcrotfact.R")
 
 # Generate the data
 
-In our simulated study, we observe three families of chemicals, that show high correlation within each family. We assume that the chemicals assume a latent representation in terms of $5$ latent. let $X_i = (x_{i1},\cdots,x_{ip})$ denote a vector of exposure measurements, we have
+In our simulated study, we observe three families of chemicals, that show high correlation within each family. We assume that the chemicals assume a latent representation of $5$ latent factors. let $X_i = (x_{i1},\cdots,x_{ip})$ denote a vector of exposure measurements, we have
 \begin{align}
 X_i = \Lambda \eta_i+ \epsilon_i,   \quad  \epsilon_i \sim N_p(0,\Psi), \\
 \end{align}
-In the next plot we show the $p \times k$ matrix of factor loadings $\Lambda$. In particular, there are "active" $3$ latent factor, each influencing one family of chamicals, and $2$ noise factors.
+For the factor loadings matrix $\Lambda$ and diagonal error covariance matrix $\Psi$. In the next plot we show the simulated $p \times k$ matrix of factor loadings $\Lambda$. In particular, there are $3$ "active" latent factors, each influencing one family of chamicals, and $2$ noise factors.
 
 ```{r}
 set.seed(1)
@@ -43,10 +47,6 @@ lambda[8:14, 2] = rnorm(7, -2, 0.5)
 lambda[15:20, 3] = rnorm(6, 2, 0.5)
 lambda[,4] = rnorm(p, 0, 0.5)
 lambda[,5] = rnorm(p, 0, 0.5)
-
-library(reshape2)
-library(ggplot2)
-library(latex2exp)
 
 longlambda = melt(lambda)
 ggplot(longlambda, aes(x = Var2, y = Var1)) + 
@@ -65,13 +65,11 @@ ggplot(longlambda, aes(x = Var2, y = Var1)) +
   ggtitle(TeX("$\\Lambda$"))
 ```
 
-Now we generate the outcome accorting with a linear regression with pairwise interactions. We assume that the first family has a positive effect on the health response and second family negative. We add some interactions between the chemicals within and between families. 
--PLOT THE MATRIX OF INTERACTIONS 
+Now we generate the outcome according to a linear regression with pairwise interactions. We assume that the first family has a positive effect on the health response and the second family has a negative effect. We add some interactions between the chemicals within and between families. 
 
 ```{r}
 n = 500;
 X = matrix(rnorm(n*k0),n,k0)%*%t(lambda) + bayesSurv::rMVNorm(n,Sigma = 3*diag(p))
-X = scale(X)
 
 # maybe heatmap correlation on X
 beta_true = numeric(p); beta_true[c(1,3,6,8,10,11)] =c(1,1,0.5,-1,-2,-0.5)
@@ -108,7 +106,6 @@ FIN can be generalized to allow for higher order interactions, allowing increasi
 
 
 ```{r}
-source("generate_DL_reg.R")
 generate_DL_reg(S = 100, k = 5, p = 20,
                 a_DL = 0.5, var_omega = 5,
                 as = 1, bs = 0.3,
@@ -159,7 +156,7 @@ Our resulting samples of the factor loadings matrix are not directly summarizabl
 
 To avoid enforcing constraints on the model we instead rely on post processing to return the samples of $\Lambda$ to a summarizable form. The forms by which samples of $\Lambda$ can change throughout the Markov Chain fall into three categories: Rotational Ambiguity, Label Switching, and Sign Ambiguity.
 
-For Rotational Ambiguity we rely on previous methods such as Varimax and the Orthogonal Procrustes algorithm to orthogonalize samples. Through these methods, we limit the amount by which samples can vary in their rotations, as they are rotated to be as orthognal as possible. Sampling noise will create and remove small amounts of linear dependence arbitrarily, so this is not guarenteed to rotationally align all samples.
+For Rotational Ambiguity we rely on previous methods such as Varimax and the Orthogonal Procrustes algorithm to orthogonalize samples. Through these methods, we limit the amount by which samples can vary in their rotations, as they are rotated to be as orthognal as possible. Sampling noise will create and remove small amounts of linear dependence even without rotational ambiguity, so while rotating to enforce maximal orthogonality among the samples helps reduce ergodic bias, it is not guarenteed to rotationally align all samples.
 
 For columnwise Label Switching we introduce a method that clusters the norms of the differences between a pivot matrix (a representative of $\Lambda$) and the samples of $\Lambda$. This clustering massively reduces the computational load in this ordinarily very large solution space ($k!m$ for $m$ samples). These normed differences represent a loss that is minimized over the space of column permutations.
 
@@ -171,16 +168,16 @@ lambda_sample = lapply(1:1000, function(ind) lambda_sample[ind,,])
 sample_mean = reduce(lambda_sample, `+`)/length(lambda_sample)
 aligned = clustalign(lambda_sample)
 rotated = mcrotfact(aligned, method = "varimax", file = FALSE)
-class(rotated$mean) <- "matrix"
+
 
 label = "Sample Mean"
 SampleMean = cbind(melt(sample_mean), label)
 label = "Processed Sample Mean"
-PrcessMean = cbind(melt(rotated$mean), label)
+ProcessMean = cbind(melt(rotated$mean), label)
 label = "Original Lambda"
 Original = cbind(melt(lambda), label)
 
-ggdf = rbind(SampleMean, RotatedMean, Original)
+ggdf = rbind(SampleMean, ProcessMean, Original)
 
 ggplot(ggdf, aes(x = Var2, y = Var1)) + 
   facet_grid(cols = vars(label)) +
@@ -198,3 +195,6 @@ ggplot(ggdf, aes(x = Var2, y = Var1)) +
   labs(fill = " ")
 
 ```
+
+
+

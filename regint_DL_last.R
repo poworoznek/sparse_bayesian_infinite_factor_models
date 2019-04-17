@@ -133,7 +133,7 @@ gibbs_DL = function(y, X ,nrun, burn, thin = 1,
       # --- Update Lambda --- #
       Plam = psijh*(phijh^2)*matrix(rep(tau^2,k),p,k,byrow=F)
       eta2 = eta.T%*%eta
-      zlams = rnorm(k*p)       # generate normal draws all at once 
+      zlams = rnorm(k*p, sd = 3)       # generate normal draws all at once 
       
       for(j in 1:p) {
          Llamt = chol(diag(Plam[j,]) + ps[j]*eta2)
@@ -185,28 +185,28 @@ gibbs_DL = function(y, X ,nrun, burn, thin = 1,
          Omega_bayes[count,,] = dsVX%*%t(a_n)%*%Psi%*%a_n%*%dsVX
          beta_bayes[count,] = as.vector(t(phi)%*%a_n)
          alpha_bayes[count] = tr(Psi%*%V_n)
-         Lambda_st[count,,] = Lambda
+         Lambda_st[count,,] = dsVX %*% Lambda
          count = count + 1
       }
       
-      if (i%%100==0){
-         print(i)
-         acp_mean = mean(acp)/100
-         print(acp_mean)
-         if(acp_mean > 0.3){
-            delta_rw = delta_rw*2
-         }else if(acp_mean < 0.2){
-            delta_rw = delta_rw*2/3
-         }
-         acp = numeric(n)
-         print(delta_rw)
-         #print(paste("time for last 100 iterations:",round(as.numeric(Sys.time()-t),0),
-         #            "seconds",sep=" "))
-         #t = Sys.time()
-         #print(paste(i,"out of",nrun,sep=" "))
-         #t_end = round(((as.numeric(difftime(Sys.time(),t0,units="secs")))/i)*(nrun-i),0)
-         #print(paste("estimated time to end:",t_end,"seconds",sep=" "))
-      }
+      #if (i%%100==0){
+      #   print(i)
+      #   acp_mean = mean(acp)/100
+      #   print(acp_mean)
+      #   if(acp_mean > 0.3){
+      #      delta_rw = delta_rw*2
+      #   }else if(acp_mean < 0.2){
+      #      delta_rw = delta_rw*2/3
+      #   }
+      #   acp = numeric(n)
+      #   print(delta_rw)
+      #   #print(paste("time for last 100 iterations:",round(as.numeric(Sys.time()-t),0),
+      #   #            "seconds",sep=" "))
+      #   #t = Sys.time()
+      #   #print(paste(i,"out of",nrun,sep=" "))
+      #   #t_end = round(((as.numeric(difftime(Sys.time(),t0,units="secs")))/i)*(nrun-i),0)
+      #   #print(paste("estimated time to end:",t_end,"seconds",sep=" "))
+      #}
    }
    
    beta_bayes = beta_bayes%*%diag(sqrt(VX))
