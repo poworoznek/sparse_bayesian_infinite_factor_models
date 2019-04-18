@@ -37,7 +37,6 @@ For the factor loadings matrix $\Lambda$ and diagonal error covariance matrix $\
 set.seed(1)
 k0 = 5
 p = 20
-n = 100
 
 lambda = matrix(rnorm(p*k0, 0, 0.01), ncol = k0)
 lambda[sample.int(p, 40, replace = TRUE) +
@@ -130,7 +129,7 @@ MAYBE RECOVERY RATE
 ```{r}
 source("regint_DL_last.R")
 
-nrun = 1500; burn = 500; thin = 1; k = 5
+nrun = 1000; burn = 500; thin = 1; k = 6
 gibbs = gibbs_DL(y, X ,nrun, burn, thin = 1, 
                delta_rw = 0.04, epsilon_rw = 0.5,
                a = 1, k = k)
@@ -141,12 +140,33 @@ gibbs = gibbs_DL(y, X ,nrun, burn, thin = 1,
 # check results, some plotting
 beta_hat = apply(gibbs$beta_bayes, 2, mean)
 Omega_hat = apply(gibbs$Omega_bayes, c(2,3), mean)
-#plot(gibbs$beta_bayes[,1],ty="l")
-cbind(beta_true,beta_hat)
-plot(beta_true,beta_hat)
-Omega_true;Omega_hat
-Omega_hat[11,5]
-plot(gibbs$Omega_bayes[,11,5],ty="l")
+# plot(gibbs$beta_bayes[,20],ty="l")
+# plot(gibbs$Omega_bayes[,11,5],ty="l")
+# cbind(beta_true,beta_hat)
+# plot(beta_true,beta_hat)
+# Omega_true;Omega_hat
+
+label = "Omega true"
+Omega_true_plot = cbind(melt(Omega_true), label)
+label = "Omega hat"
+Omega_hat_plot = cbind(melt(Omega_hat), label)
+
+ggdf = rbind(Omega_true_plot, Omega_hat_plot)
+
+ggplot(ggdf, aes(x = Var2, y = Var1)) + 
+  facet_grid(cols = vars(label)) +
+  geom_tile(aes(fill=value), colour="grey20") + 
+  scale_fill_gradient2(low = "#3d52bf", high = "#33961b", mid = "white") +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        legend.title = element_text(),
+        plot.title = element_text(hjust = 0.5)) + 
+  labs(fill = " ")
 ```
 
 
