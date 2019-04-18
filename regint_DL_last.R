@@ -106,7 +106,7 @@ gibbs_DL = function(y, X ,nrun, burn, thin = 1,
       MM = model.matrix(y~.^2 - 1,as.data.frame(eta))   # perform factorized regression
       X_reg = cbind(eta^2,MM[,(k+1):ncol(MM)])
       X_reg.T = t(X_reg)
-      Lambda_n = X_reg.T%*%X_reg/sigmasq_y + diag(rep(1,ncol(X_reg)))
+      Lambda_n = X_reg.T%*%X_reg/sigmasq_y + diag(rep(1,ncol(X_reg)))*3
       Vcsi = solve(Lambda_n)
       Mcsi = Vcsi%*%X_reg.T%*%(y-eta%*%phi)/sigmasq_y
       csi = bayesSurv::rMVNorm(n=1,mean=Mcsi,Sigma=Vcsi)
@@ -119,7 +119,7 @@ gibbs_DL = function(y, X ,nrun, burn, thin = 1,
       
       # --- Update phi --- #
       eta.T = t(eta)
-      Lambda_n = eta.T%*%eta/sigmasq_y + diag(rep(1,ncol(eta)))
+      Lambda_n = eta.T%*%eta/sigmasq_y + diag(rep(1,ncol(eta)))*5
       Vcsi = solve(Lambda_n)
       Mcsi = Vcsi%*%eta.T%*%(y-diag(eta%*%Psi%*%eta.T))/sigmasq_y     # using updated psi
       phi = bayesSurv::rMVNorm(n = 1, mean = Mcsi, Sigma = Vcsi)
@@ -133,7 +133,7 @@ gibbs_DL = function(y, X ,nrun, burn, thin = 1,
       # --- Update Lambda --- #
       Plam = psijh*(phijh^2)*matrix(rep(tau^2,k),p,k,byrow=F)
       eta2 = eta.T%*%eta
-      zlams = rnorm(k*p, sd = 3)       # generate normal draws all at once 
+      zlams = rnorm(k*p, sd = 1)       # generate normal draws all at once 
       
       for(j in 1:p) {
          Llamt = chol(diag(Plam[j,]) + ps[j]*eta2)
@@ -189,16 +189,16 @@ gibbs_DL = function(y, X ,nrun, burn, thin = 1,
          count = count + 1
       }
       
-      #if (i%%100==0){
-      #   print(i)
-      #   acp_mean = mean(acp)/100
-      #   print(acp_mean)
-      #   if(acp_mean > 0.3){
-      #      delta_rw = delta_rw*2
-      #   }else if(acp_mean < 0.2){
-      #      delta_rw = delta_rw*2/3
-      #   }
-      #   acp = numeric(n)
+      if (i%%100==0){
+      #    print(i)
+         acp_mean = mean(acp)/100
+         print(acp_mean)
+         if(acp_mean > 0.3){
+            delta_rw = delta_rw*2
+         }else if(acp_mean < 0.2){
+            delta_rw = delta_rw*2/3
+         }
+         acp = numeric(n)
       #   print(delta_rw)
       #   #print(paste("time for last 100 iterations:",round(as.numeric(Sys.time()-t),0),
       #   #            "seconds",sep=" "))
@@ -206,7 +206,7 @@ gibbs_DL = function(y, X ,nrun, burn, thin = 1,
       #   #print(paste(i,"out of",nrun,sep=" "))
       #   #t_end = round(((as.numeric(difftime(Sys.time(),t0,units="secs")))/i)*(nrun-i),0)
       #   #print(paste("estimated time to end:",t_end,"seconds",sep=" "))
-      #}
+      }
    }
    
    beta_bayes = beta_bayes%*%diag(sqrt(VX))
@@ -214,7 +214,7 @@ gibbs_DL = function(y, X ,nrun, burn, thin = 1,
                beta_bayes = beta_bayes,
                Omega_bayes = Omega_bayes,
                Lambda = Lambda_st,
-               acp = acp/(nrun-burn),
+               #acp = acp/(nrun-burn),
                tau = tau_st,
                sigmasq_st = sigmasq_st,
                a = a))
