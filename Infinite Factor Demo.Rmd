@@ -75,7 +75,7 @@ X = matrix(rnorm(n*k0),n,k0)%*%t(lambda) + bayesSurv::rMVNorm(n,Sigma = 3*diag(p
 beta_true = numeric(p); beta_true[c(1,3,6,8,10,11)] =c(1,1,0.5,-1,-2,-0.5)
 Omega_true = matrix(0,p,p)
 Omega_true[1,2] = 1; Omega_true[5,2] = -1; Omega_true[10,8] = 1; 
-Omega_true[11,5] = -2; Omega_true[1,1] = 1; 
+Omega_true[11,5] = -2; Omega_true[1,1] = 0.5; 
 Omega_true[2,3] = 0.5; 
 Omega_true = Omega_true + t(Omega_true)
 y = X%*%beta_true + diag(X%*%Omega_true%*%t(X)) +  rnorm(n,0.5)
@@ -106,7 +106,7 @@ FIN can be generalized to allow for higher order interactions, allowing increasi
 
 
 ```{r}
-generate_DL_reg(S = 100, k = 5, p = 20,
+generate_DL_reg(S = 10000, k = 5, p = 20,
                 a_DL = 0.5, var_omega = 5,
                 as = 1, bs = 0.3,
                 trace = FALSE, every = 500)
@@ -114,7 +114,7 @@ generate_DL_reg(S = 100, k = 5, p = 20,
 
 
 ```{r, echo = FALSE}
-generate_DL_reg(S = 100, k = 10, p = 20,
+generate_DL_reg(S = 10000, k = 10, p = 20,
                 a_DL = 0.5, var_omega = 5,
                 as = 1, bs = 0.3,
                 trace = FALSE, every = 500)
@@ -130,7 +130,7 @@ MAYBE RECOVERY RATE
 ```{r}
 source("regint_DL_last.R")
 
-nrun = 1000; burn = 500; thin = 1; k = 6
+nrun = 5000; burn = 4000; thin = 1; k = 6
 gibbs = gibbs_DL(y, X ,nrun, burn, thin = 1, 
                delta_rw = 0.04, epsilon_rw = 0.5,
                a = 1, k = k)
@@ -185,7 +185,7 @@ For Sign Ambiguity we augment the Label Switching method to now minimize the pre
 
 ```{r}
 lambda_sample = gibbs$Lambda
-lambda_sample = lapply(1:1000, function(ind) lambda_sample[ind,,])
+lambda_sample = lapply(1:500, function(ind) lambda_sample[ind,,])
 sample_mean = reduce(lambda_sample, `+`)/length(lambda_sample)
 rotated = mcrotfact(lambda_sample, method = "varimax", file = FALSE)
 aligned = clustalignplus(rotated$samples, itermax = 500)
@@ -193,7 +193,7 @@ aligned = clustalignplus(rotated$samples, itermax = 500)
 label = "Sample Mean"
 SampleMean = cbind(melt(sample_mean), label)
 label = "Processed Sample Mean"
-ProcessMean = cbind(melt(rotated$mean), label)
+ProcessMean = cbind(melt(Reduce("+", aligned)/length(aligned)), label)
 label = "Original Lambda"
 Original = cbind(melt(lambda), label)
 
