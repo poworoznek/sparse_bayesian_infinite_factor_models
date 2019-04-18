@@ -68,7 +68,7 @@ ggplot(longlambda, aes(x = Var2, y = Var1)) +
 Now we generate the outcome according to a linear regression with pairwise interactions. We assume that the first family has a positive effect on the health response and the second family has a negative effect. We add some interactions between the chemicals within and between families. 
 
 ```{r}
-n = 2500;
+n = 500;
 X = matrix(rnorm(n*k0),n,k0)%*%t(lambda) + bayesSurv::rMVNorm(n,Sigma = 3*diag(p))
 
 # maybe heatmap correlation on X
