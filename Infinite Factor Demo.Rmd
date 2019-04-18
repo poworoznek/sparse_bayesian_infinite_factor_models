@@ -106,7 +106,7 @@ FIN can be generalized to allow for higher order interactions, allowing increasi
 
 
 ```{r}
-generate_DL_reg(S = 10000, k = 5, p = 20,
+generate_DL_reg(S = 100, k = 5, p = 20,
                 a_DL = 0.5, var_omega = 5,
                 as = 1, bs = 0.3,
                 trace = FALSE, every = 500)
@@ -114,7 +114,7 @@ generate_DL_reg(S = 10000, k = 5, p = 20,
 
 
 ```{r, echo = FALSE}
-generate_DL_reg(S = 10000, k = 10, p = 20,
+generate_DL_reg(S = 100, k = 10, p = 20,
                 a_DL = 0.5, var_omega = 5,
                 as = 1, bs = 0.3,
                 trace = FALSE, every = 500)
@@ -127,9 +127,9 @@ generate_DL_reg(S = 10000, k = 10, p = 20,
 ADD PLOTS: ESTIMATED MAIN EFFECTS AND TRUE, SAME WITH INT
 MAYBE RECOVERY RATE
 
-```{r}
+```{r cache=TRUE}
 source("regint_DL_last.R")
-nrun = 5000; burn = 4000; thin = 1; k = 6
+nrun = 3000; burn = 2000; thin = 1; k = 6
 gibbs = gibbs_DL(y, X ,nrun, burn, thin = 1, 
                delta_rw = 0.04, epsilon_rw = 0.5,
                a = 1, k = k)
@@ -186,19 +186,21 @@ For Sign Ambiguity we augment the Label Switching method to now minimize the pre
 
 ```{r}
 lambda_sample = gibbs$Lambda
-lambda_sample = lapply(1:500, function(ind) lambda_sample[ind,,])
+lambda_sample = lapply(1:1000, function(ind) lambda_sample[ind,,])
 sample_mean = reduce(lambda_sample, `+`)/length(lambda_sample)
 rotated = mcrotfact(lambda_sample, method = "varimax", file = FALSE)
 aligned = clustalignplus(rotated$samples, itermax = 500)
 
 label = "Sample Mean"
 SampleMean = cbind(melt(sample_mean), label)
-label = "Processed Sample Mean"
+label = "Rotated Sample Mean"
+RotatedMean = cbind(melt(rotated$mean), label)
+label = "Aligned Sample Mean"
 ProcessMean = cbind(melt(Reduce("+", aligned)/length(aligned)), label)
 label = "Original Lambda"
 Original = cbind(melt(lambda), label)
 
-ggdf = rbind(SampleMean, ProcessMean, Original)
+ggdf = rbind(SampleMean, RotatedMean, ProcessMean, Original)
 
 ggplot(ggdf, aes(x = Var2, y = Var1)) + 
   facet_grid(cols = vars(label)) +
@@ -217,26 +219,6 @@ ggplot(ggdf, aes(x = Var2, y = Var1)) +
 
 ```
 
-```{r}
-library(magick)
-ggplot(melt(aligned[[950]]), aes(x = Var2, y = Var1)) + 
-  geom_tile(aes(fill=value), colour="grey20") + 
-  scale_fill_gradient2(low = "#3d52bf", high = "#33961b", mid = "white") +
-  theme(axis.title.x = element_blank(),
-        axis.title.y = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.border = element_blank(),
-        panel.background = element_blank(),
-        axis.ticks = element_blank(),
-        axis.text = element_blank(),
-        legend.title = element_text(),
-        plot.title = element_text(hjust = 0.5)) + 
-  labs(fill = " ")
-lambda.image =  image_scale(image_read(), "600x600!")
-for(i in 900:1000){
-lambda.add =  image_scale(image_read(abs(factl[,,i,  drop = F] / max(factl))), "600x600!")
-lambda.image =  c(lambda.image, lambda.add)
-}
-```
+
 
 
