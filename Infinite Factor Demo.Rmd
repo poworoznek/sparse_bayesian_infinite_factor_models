@@ -19,8 +19,9 @@ library(ggplot2)
 library(latex2exp)
 source("generate_DL_reg.R")
 source("regint.R")
-source("clustalign.R")
-source("permfact.R")
+source("clustalignplus.R")
+source("permsignfact.R")
+source("signer.R")
 source("permuter.R")
 source("mcrotfact.R")
 ```
@@ -188,9 +189,8 @@ For Sign Ambiguity we augment the Label Switching method to now minimize the pre
 lambda_sample = gibbs$Lambda
 lambda_sample = lapply(1:1000, function(ind) lambda_sample[ind,,])
 sample_mean = reduce(lambda_sample, `+`)/length(lambda_sample)
-aligned = clustalign(lambda_sample)
-rotated = mcrotfact(aligned, method = "varimax", file = FALSE)
-
+rotated = mcrotfact(lambda_sample, method = "varimax", file = FALSE)
+aligned = clustalignplus(rotated$samples, itermax = 500)
 
 label = "Sample Mean"
 SampleMean = cbind(melt(sample_mean), label)
@@ -218,5 +218,26 @@ ggplot(ggdf, aes(x = Var2, y = Var1)) +
 
 ```
 
+```{r}
+library(magick)
+ggplot(melt(aligned[[950]]), aes(x = Var2, y = Var1)) + 
+  geom_tile(aes(fill=value), colour="grey20") + 
+  scale_fill_gradient2(low = "#3d52bf", high = "#33961b", mid = "white") +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        legend.title = element_text(),
+        plot.title = element_text(hjust = 0.5)) + 
+  labs(fill = " ")
+lambda.image =  image_scale(image_read(), "600x600!")
+for(i in 900:1000){
+lambda.add =  image_scale(image_read(abs(factl[,,i,  drop = F] / max(factl))), "600x600!")
+lambda.image =  c(lambda.image, lambda.add)
+}
+```
 
 
