@@ -68,7 +68,7 @@ ggplot(longlambda, aes(x = Var2, y = Var1)) +
 Now we generate the outcome according to a linear regression with pairwise interactions. We assume that the first family has a positive effect on the health response and the second family has a negative effect. We add some interactions between the chemicals within and between families. 
 
 ```{r}
-n = 500;
+n = 2500;
 X = matrix(rnorm(n*k0),n,k0)%*%t(lambda) + bayesSurv::rMVNorm(n,Sigma = 3*diag(p))
 
 # maybe heatmap correlation on X
@@ -129,7 +129,6 @@ MAYBE RECOVERY RATE
 
 ```{r}
 source("regint_DL_last.R")
-
 nrun = 5000; burn = 4000; thin = 1; k = 6
 gibbs = gibbs_DL(y, X ,nrun, burn, thin = 1, 
                delta_rw = 0.04, epsilon_rw = 0.5,
@@ -141,9 +140,11 @@ gibbs = gibbs_DL(y, X ,nrun, burn, thin = 1,
 # check results, some plotting
 beta_hat = apply(gibbs$beta_bayes, 2, mean)
 Omega_hat = apply(gibbs$Omega_bayes, c(2,3), mean)
-# plot(gibbs$beta_bayes[,20],ty="l")
+range(Omega_hat)
+plot(gibbs$beta_bayes[,20],ty="l")
 # plot(gibbs$Omega_bayes[,11,5],ty="l")
-# cbind(beta_true,beta_hat)
+cbind(beta_true,beta_hat)
+
 # plot(beta_true,beta_hat)
 # Omega_true;Omega_hat
 

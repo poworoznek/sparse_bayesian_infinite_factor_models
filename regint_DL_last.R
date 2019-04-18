@@ -25,6 +25,7 @@ gibbs_DL = function(y, X ,nrun, burn, thin = 1,
    if(length(y) != n) stop("Mismatching input lengths")
    
    VX = apply(X, 2, var)          # prepare data matrix
+   #VX = rep(1,p)
    X = as.matrix(scale(X))
    
    sp = floor((nrun - burn)/thin)
@@ -106,7 +107,7 @@ gibbs_DL = function(y, X ,nrun, burn, thin = 1,
       MM = model.matrix(y~.^2 - 1,as.data.frame(eta))   # perform factorized regression
       X_reg = cbind(eta^2,MM[,(k+1):ncol(MM)])
       X_reg.T = t(X_reg)
-      Lambda_n = X_reg.T%*%X_reg/sigmasq_y + diag(rep(1,ncol(X_reg)))*3
+      Lambda_n = X_reg.T%*%X_reg/sigmasq_y + diag(rep(1,ncol(X_reg)))
       Vcsi = solve(Lambda_n)
       Mcsi = Vcsi%*%X_reg.T%*%(y-eta%*%phi)/sigmasq_y
       csi = bayesSurv::rMVNorm(n=1,mean=Mcsi,Sigma=Vcsi)
@@ -119,7 +120,7 @@ gibbs_DL = function(y, X ,nrun, burn, thin = 1,
       
       # --- Update phi --- #
       eta.T = t(eta)
-      Lambda_n = eta.T%*%eta/sigmasq_y + diag(rep(1,ncol(eta)))*5
+      Lambda_n = eta.T%*%eta/sigmasq_y + diag(rep(1,ncol(eta)))/2
       Vcsi = solve(Lambda_n)
       Mcsi = Vcsi%*%eta.T%*%(y-diag(eta%*%Psi%*%eta.T))/sigmasq_y     # using updated psi
       phi = bayesSurv::rMVNorm(n = 1, mean = Mcsi, Sigma = Vcsi)
@@ -181,8 +182,9 @@ gibbs_DL = function(y, X ,nrun, burn, thin = 1,
          #Bayesian estimators
          V_n = solve(Lambda.T%*%solve(Sigma)%*%Lambda+diag(rep(1,ncol(Lambda))))
          a_n = V_n%*%Lambda.T%*%solve(Sigma)
-         dsVX = diag(sqrt(VX))
-         Omega_bayes[count,,] = dsVX%*%t(a_n)%*%Psi%*%a_n%*%dsVX
+         dsVX = diag(sqrt(VX)))
+         dsVX_inv = 1/dsVX
+         Omega_bayes[count,,] = dsVX_inv%*%t(a_n)%*%Psi%*%a_n%*%dsVX_inv
          beta_bayes[count,] = as.vector(t(phi)%*%a_n)
          alpha_bayes[count] = tr(Psi%*%V_n)
          Lambda_st[count,,] = dsVX %*% Lambda
@@ -209,7 +211,7 @@ gibbs_DL = function(y, X ,nrun, burn, thin = 1,
       }
    }
    
-   beta_bayes = beta_bayes%*%diag(sqrt(VX))
+   beta_bayes = beta_bayes%*%dsVX_inv
    return(list(alpha_bayes = alpha_bayes,
                beta_bayes = beta_bayes,
                Omega_bayes = Omega_bayes,
