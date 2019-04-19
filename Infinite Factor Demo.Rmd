@@ -2,7 +2,7 @@
 title: "Factor for INteractions (FIN) and Postprocessing"
 author: "Federico Ferrari and Evan Poworoznek"
 date: "4/11/2019"
-bibliography: library.bib
+bibliography: Bib.bib
 output: 
    html_document:
     toc: true
@@ -65,7 +65,7 @@ ggplot(longlambda, aes(x = Var2, y = Var1)) +
         legend.title = element_text(),
         plot.title = element_text(hjust = 0.5)) + 
   labs(fill = " ") +
-  ggtitle(TeX("$\True \Lambda$"))
+  ggtitle(TeX("$True \\Lambda$"))
 ```
 
 
@@ -95,7 +95,7 @@ Let $y_i$ denote a continuous health response for individual $i$. We propose a l
 \end{align}
 where $\Psi = diag(\sigma_1^2,\cdots, \sigma_p^2)$We can show that induced regression of $X_i$ on $y_i$ is indeed a quadratic regression, i.e. :
 $$E(y_i | X_i) = tr (\Omega V)+(\omega^T A) X_i + X_i^T (A^T \Omega A) X_i$$ 
-where $V = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1}$ and $A = V \Lambda^T \Psi^{-1}  = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1} \Lambda^T \Psi^{-1}$. Several priors have been proposed for the $p \times k$ factor loadings matrix $\Lambda$, including priors that allow the number of factors to be equal to $+ \infty$ []. We choose the Dirichlet-Laplace (DL) prior of [@batthacharya] row-wise for $\Lambda$, corresponding to
+where $V = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1}$ and $A = V \Lambda^T \Psi^{-1}  = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1} \Lambda^T \Psi^{-1}$. Several priors have been proposed for the $p \times k$ factor loadings matrix $\Lambda$, including priors that allow the number of factors to be equal to $+ \infty$ [@Bhattacharya2013,@legramanti2019bayesian]. We choose the Dirichlet-Laplace (DL) prior of [@Bhattacharya2015] row-wise for $\Lambda$, corresponding to
 \begin{align*}
 \lambda_{j,h} | \phi_j, \tau_j \sim DE(\phi_{j,h} \tau_j) \quad h = 1, \cdots, k  \\
 \phi_j \sim Dir(a,\cdots,a) \quad \tau_j \sim Gamma(k a , 1/2),
@@ -137,14 +137,13 @@ gibbs = gibbs_DL(y, X ,nrun, burn, thin = 1,
 
 ```
 
-```{r}
+```{r, echo=FALSE}
 # check results, some plotting
 beta_hat = apply(gibbs$beta_bayes, 2, mean)
 Omega_hat = apply(gibbs$Omega_bayes, c(2,3), mean)
-range(Omega_hat)
-plot(gibbs$beta_bayes[,20],ty="l")
+# plot(gibbs$beta_bayes[,20],ty="l")
 # plot(gibbs$Omega_bayes[,11,5],ty="l")
-cbind(beta_true,beta_hat)
+# cbind(beta_true,beta_hat)
 
 # plot(beta_true,beta_hat)
 # Omega_true;Omega_hat
@@ -190,17 +189,9 @@ lambda_sample = lapply(1:1000, function(ind) lambda_sample[ind,,])
 sample_mean = reduce(lambda_sample, `+`)/length(lambda_sample)
 rotated = mcrotfact(lambda_sample, method = "varimax", file = FALSE)
 aligned = clustalignplus(rotated$samples, itermax = 500)
+```
 
-label = "Sample Mean"
-SampleMean = cbind(melt(sample_mean), label)
-label = "Rotated Sample Mean"
-RotatedMean = cbind(melt(rotated$mean), label)
-label = "Aligned Sample Mean"
-ProcessMean = cbind(melt(Reduce("+", aligned)/length(aligned)), label)
-label = "Original Lambda"
-Original = cbind(melt(lambda), label)
-
-ggdf = rbind(SampleMean, RotatedMean, ProcessMean, Original)
+```{r, echo=FALSE}
 
 ggplot(ggdf, aes(x = Var2, y = Var1)) + 
   facet_grid(cols = vars(label)) +
@@ -216,9 +207,6 @@ ggplot(ggdf, aes(x = Var2, y = Var1)) +
         legend.title = element_text(),
         plot.title = element_text(hjust = 0.5)) + 
   labs(fill = " ")
-
 ```
-
-
 
 
