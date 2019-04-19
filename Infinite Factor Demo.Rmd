@@ -2,6 +2,7 @@
 title: "Factor for INteractions (FIN) and Postprocessing"
 author: "Federico Ferrari and Evan Poworoznek"
 date: "4/11/2019"
+bibliography: library.bib
 output: 
    html_document:
     toc: true
@@ -28,11 +29,11 @@ source("mcrotfact.R")
 
 # Generate the data
 
-In our simulated study, we observe three families of chemicals, that show high correlation within each family. We assume that the chemicals assume a latent representation of $5$ latent factors. let $X_i = (x_{i1},\cdots,x_{ip})$ denote a vector of exposure measurements, we have
+In our simulated study, we observe three families of chemicals, that show high correlation within each family. We assume that the chemicals assume a latent representation of $5$ factors. let $X_i = (x_{i1},\cdots,x_{ip})$ denote a vector of exposure measurements, we have
 \begin{align}
 X_i = \Lambda \eta_i+ \epsilon_i,   \quad  \epsilon_i \sim N_p(0,\Psi), \\
 \end{align}
-For the factor loadings matrix $\Lambda$ and diagonal error covariance matrix $\Psi$. In the next plot we show the simulated $p \times k$ matrix of factor loadings $\Lambda$. In particular, there are $3$ "active" latent factors, each influencing one family of chamicals, and $2$ noise factors.
+where $\Lambda$ is the factor loadings matrix and $\Psi$ a diagonal matrix. In the next plot we show the simulated $p \times k$ matrix of factor loadings $\Lambda$. In particular, there are $3$ "active" latent factors, each influencing one family of chemicals, and $2$ noise factors.
 
 ```{r}
 set.seed(1)
@@ -47,7 +48,9 @@ lambda[8:14, 2] = rnorm(7, -2, 0.5)
 lambda[15:20, 3] = rnorm(6, 2, 0.5)
 lambda[,4] = rnorm(p, 0, 0.5)
 lambda[,5] = rnorm(p, 0, 0.5)
+```
 
+```{r, echo=FALSE}
 longlambda = melt(lambda)
 ggplot(longlambda, aes(x = Var2, y = Var1)) + 
   geom_tile(aes(fill=value), colour="grey20") + 
@@ -62,8 +65,9 @@ ggplot(longlambda, aes(x = Var2, y = Var1)) +
         legend.title = element_text(),
         plot.title = element_text(hjust = 0.5)) + 
   labs(fill = " ") +
-  ggtitle(TeX("$\\Lambda$"))
+  ggtitle(TeX("$\True \Lambda$"))
 ```
+
 
 Now we generate the outcome according to a linear regression with pairwise interactions. We assume that the first family has a positive effect on the health response and the second family has a negative effect. We add some interactions between the chemicals within and between families. 
 
@@ -71,7 +75,6 @@ Now we generate the outcome according to a linear regression with pairwise inter
 n = 500;
 X = matrix(rnorm(n*k0),n,k0)%*%t(lambda) + bayesSurv::rMVNorm(n,Sigma = 3*diag(p))
 
-# maybe heatmap correlation on X
 beta_true = numeric(p); beta_true[c(1,3,6,8,10,11)] =c(1,1,0.5,-1,-2,-0.5)
 Omega_true = matrix(0,p,p)
 Omega_true[1,2] = 1; Omega_true[5,2] = -1; Omega_true[10,8] = 1; 
@@ -92,7 +95,7 @@ Let $y_i$ denote a continuous health response for individual $i$. We propose a l
 \end{align}
 where $\Psi = diag(\sigma_1^2,\cdots, \sigma_p^2)$We can show that induced regression of $X_i$ on $y_i$ is indeed a quadratic regression, i.e. :
 $$E(y_i | X_i) = tr (\Omega V)+(\omega^T A) X_i + X_i^T (A^T \Omega A) X_i$$ 
-where $V = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1}$ and $A = V \Lambda^T \Psi^{-1}  = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1} \Lambda^T \Psi^{-1}$. Several priors have been proposed for the $p \times k$ factor loadings matrix $\Lambda$, including priors that allow the number of factors to be equal to $+ \infty$ (add REFs). We choose the Dirichlet-Laplace (DL) prior of (REF) row-wise for $\Lambda$, corresponding to
+where $V = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1}$ and $A = V \Lambda^T \Psi^{-1}  = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1} \Lambda^T \Psi^{-1}$. Several priors have been proposed for the $p \times k$ factor loadings matrix $\Lambda$, including priors that allow the number of factors to be equal to $+ \infty$ []. We choose the Dirichlet-Laplace (DL) prior of [@batthacharya] row-wise for $\Lambda$, corresponding to
 \begin{align*}
 \lambda_{j,h} | \phi_j, \tau_j \sim DE(\phi_{j,h} \tau_j) \quad h = 1, \cdots, k  \\
 \phi_j \sim Dir(a,\cdots,a) \quad \tau_j \sim Gamma(k a , 1/2),
@@ -106,7 +109,7 @@ FIN can be generalized to allow for higher order interactions, allowing increasi
 
 
 ```{r}
-generate_DL_reg(S = 100, k = 5, p = 20,
+generate_DL_reg(S = 5000, k = 5, p = 20,
                 a_DL = 0.5, var_omega = 5,
                 as = 1, bs = 0.3,
                 trace = FALSE, every = 500)
@@ -114,7 +117,7 @@ generate_DL_reg(S = 100, k = 5, p = 20,
 
 
 ```{r, echo = FALSE}
-generate_DL_reg(S = 100, k = 10, p = 20,
+generate_DL_reg(S = 5000, k = 10, p = 20,
                 a_DL = 0.5, var_omega = 5,
                 as = 1, bs = 0.3,
                 trace = FALSE, every = 500)
@@ -168,7 +171,6 @@ ggplot(ggdf, aes(x = Var2, y = Var1)) +
         plot.title = element_text(hjust = 0.5)) + 
   labs(fill = " ")
 ```
-
 
 # Postprocessing
 
