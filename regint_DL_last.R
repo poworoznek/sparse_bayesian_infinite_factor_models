@@ -182,8 +182,8 @@ gibbs_DL = function(y, X ,nrun, burn, thin = 1,
          #Bayesian estimators
          V_n = solve(Lambda.T%*%solve(Sigma)%*%Lambda+diag(rep(1,ncol(Lambda))))
          a_n = V_n%*%Lambda.T%*%solve(Sigma)
-         dsVX = diag(sqrt(VX)))
-         dsVX_inv = 1/dsVX
+         dsVX = diag(sqrt(VX))
+         dsVX_inv = diag(1/sqrt(VX))
          Omega_bayes[count,,] = dsVX_inv%*%t(a_n)%*%Psi%*%a_n%*%dsVX_inv
          beta_bayes[count,] = as.vector(t(phi)%*%a_n)
          alpha_bayes[count] = tr(Psi%*%V_n)
@@ -194,7 +194,7 @@ gibbs_DL = function(y, X ,nrun, burn, thin = 1,
       if (i%%100==0){
       #    print(i)
          acp_mean = mean(acp)/100
-         print(acp_mean)
+         # print(acp_mean)
          if(acp_mean > 0.3){
             delta_rw = delta_rw*2
          }else if(acp_mean < 0.2){
