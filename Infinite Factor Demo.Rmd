@@ -124,17 +124,10 @@ generate_DL_reg(S = 100, k = 10, p = 20,
 
 ## Regression Example 
 
-ADD PLOTS: ESTIMATED MAIN EFFECTS AND TRUE, SAME WITH INT
-MAYBE RECOVERY RATE
 
 ```{r cache=TRUE}
 source("regint_DL_last.R")
-<<<<<<< HEAD
-
 nrun = 5000; burn = 4000; thin = 1; k = 6
-=======
-nrun = 3000; burn = 2000; thin = 1; k = 6
->>>>>>> 6785170f3220699dd62dfddcbdebd8a6e515e056
 gibbs = gibbs_DL(y, X ,nrun, burn, thin = 1, 
                delta_rw = 0.04, epsilon_rw = 0.5,
                a = 1, k = k)
