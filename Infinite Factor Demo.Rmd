@@ -7,7 +7,9 @@ output:
    html_document:
     toc: true
     toc_float: true
+    mathjax: "default"
 ---
+
 
 ```{r include = FALSE}
 library(tidyverse)
@@ -29,10 +31,8 @@ source("mcrotfact.R")
 
 # Generate the data
 
-In our simulated study, we observe three families of chemicals, that show high correlation within each family. We assume that the chemicals assume a latent representation of $5$ factors. let $X_i = (x_{i1},\cdots,x_{ip})$ denote a vector of exposure measurements, we have
-\begin{align}
-X_i = \Lambda \eta_i+ \epsilon_i,   \quad  \epsilon_i \sim N_p(0,\Psi), \\
-\end{align}
+In our simulated study, we observe three families of chemicals, that show high correlation within each family. We assume that the chemicals assume a latent representation of 5 factors. Let $X_i = (x_{i1},\cdots,x_{ip})$ denote a vector of exposure measurements, we have
+$$X_i = \Lambda \eta_i+ \epsilon_i,   \quad  \epsilon_i \sim N_p(0,\Psi),$$
 where $\Lambda$ is the factor loadings matrix and $\Psi$ a diagonal matrix. In the next plot we show the simulated $p \times k$ matrix of factor loadings $\Lambda$. In particular, there are $3$ "active" latent factors, each influencing one family of chemicals, and $2$ noise factors.
 
 ```{r}
@@ -65,7 +65,7 @@ ggplot(longlambda, aes(x = Var2, y = Var1)) +
         legend.title = element_text(),
         plot.title = element_text(hjust = 0.5)) + 
   labs(fill = " ") +
-  ggtitle(TeX("$True \\Lambda$"))
+  ggtitle(TeX("True $\\Lambda$"))
 ```
 
 
@@ -85,21 +85,17 @@ y = X%*%beta_true + diag(X%*%Omega_true%*%t(X)) +  rnorm(n,0.5)
 ```
 
 
-# FIN - Bayesian Factor Model for INteractions (FIN)
+# Bayesian Factor Model for INteractions (FIN)
 
-Let $y_i$ denote a continuous health response for individual $i$. We propose a latent factor joint model, which includes shared factors in both the predictor and response components while assuming conditional independence. We include interactions among latent variables in the response component. We also assume that, given the latent variables, the explanatory variables and the response are continuous and normally distributed. We assume that the data have been standardized prior to the analysis so that we omit the intercept.
-\begin{align}
-& y_i = \eta_i^T \omega + \eta_i^T \Omega \eta_i +\epsilon_{y,i},  \quad \epsilon_{y,i} \sim N(0,\sigma^2) \nonumber,  \\ 
-& X_i = \Lambda \eta_i+ \epsilon_i,   \quad  \epsilon_i \sim N_p(0,\Psi), \\
-& \eta_i \sim N_k(0,I), \nonumber
-\end{align}
-where $\Psi = diag(\sigma_1^2,\cdots, \sigma_p^2)$We can show that induced regression of $X_i$ on $y_i$ is indeed a quadratic regression, i.e. :
+Let $y_i$ denote a continuous health response for individual i. We propose a latent factor joint model, which includes shared factors in both the predictor and response components while assuming conditional independence. We include interactions among latent variables in the response component. We also assume that, given the latent variables, the explanatory variables and the response are continuous and normally distributed. We assume that the data have been standardized prior to the analysis so that we omit the intercept.
+$$y_i = \eta_i^T \omega + \eta_i^T \Omega \eta_i +\epsilon_{y,i},  \quad \epsilon_{y,i} \sim N(0,\sigma^2) \nonumber,  \\ 
+ X_i = \Lambda \eta_i+ \epsilon_i,   \quad  \epsilon_i \sim N_p(0,\Psi), \quad \eta_i \sim N_k(0,I),$$
+where $\Psi = diag(\sigma_1^2,\cdots, \sigma_p^2)$ We can $3^{rd}$show that induced regression of $X_i$ on $y_i$ is indeed a quadratic regression, i.e. :
 $$E(y_i | X_i) = tr (\Omega V)+(\omega^T A) X_i + X_i^T (A^T \Omega A) X_i$$ 
 where $V = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1}$ and $A = V \Lambda^T \Psi^{-1}  = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1} \Lambda^T \Psi^{-1}$. Several priors have been proposed for the $p \times k$ factor loadings matrix $\Lambda$, including priors that allow the number of factors to be equal to $+ \infty$ [@Bhattacharya2013,@legramanti2019bayesian]. We choose the Dirichlet-Laplace (DL) prior of [@Bhattacharya2015] row-wise for $\Lambda$, corresponding to
-\begin{align*}
-\lambda_{j,h} | \phi_j, \tau_j \sim DE(\phi_{j,h} \tau_j) \quad h = 1, \cdots, k  \\
+$$\lambda_{j,h} | \phi_j, \tau_j \sim DE(\phi_{j,h} \tau_j) \quad h = 1, \cdots, k  \\
 \phi_j \sim Dir(a,\cdots,a) \quad \tau_j \sim Gamma(k a , 1/2),
-\end{align*}
+$$
 Through the choice of the DL prior, we are inducing near sparsity row-wise in the matrix $\Lambda$. In fact, it is reasonable to assume that each variable loads on a few factors. This does not imply that $\Omega$ will be sparse too. 
 
 ## Induced main Effects and Interactions
@@ -125,7 +121,7 @@ generate_DL_reg(S = 5000, k = 10, p = 20,
 
 
 
-## Regression Example 
+# Regression Example 
 
 
 ```{r cache=TRUE}
@@ -192,7 +188,15 @@ aligned = clustalignplus(rotated$samples, itermax = 500)
 ```
 
 ```{r, echo=FALSE}
-
+label = "Sample Mean"
+SampleMean = cbind(melt(sample_mean), label)
+label = "Rotated Sample Mean"
+RotatedMean = cbind(melt(rotated$mean), label)
+label = "Aligned Sample Mean"
+ProcessMean = cbind(melt(Reduce("+", aligned)/length(aligned)), label)
+label = "Original Lambda"
+Original = cbind(melt(lambda), label)
+ggdf = rbind(SampleMean, RotatedMean, ProcessMean, Original)
 ggplot(ggdf, aes(x = Var2, y = Var1)) + 
   facet_grid(cols = vars(label)) +
   geom_tile(aes(fill=value), colour="grey20") + 
