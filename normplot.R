@@ -7,5 +7,6 @@ normplot = function(lambda){
   pivot = base::sample(lambda, 1)[[1]]
   difflist = lapply(lambda, "-", pivot)
   norms = sapply(difflist, norm, "2")
+  norms = norms[-which.min(norms)]
   hist(norms, breaks = 100)
 }
