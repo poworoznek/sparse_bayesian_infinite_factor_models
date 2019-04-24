@@ -226,6 +226,18 @@ div.tocify {
 </div>
 
 
+<pre class="r"><code>library(tidyverse)
+library(bayesSurv)
+library(GIGrvg)
+library(statmod)
+library(MCMCpack)
+library(reshape2)
+library(ggplot2)
+library(latex2exp)
+library(psych)</code></pre>
+<pre><code>## Warning: package 'psych' was built under R version 3.5.2</code></pre>
+<pre class="r"><code>library(parallel)
+source(&quot;https://raw.githubusercontent.com/poworoznek/sparse_bayesian_infinite_factor_models/master/demo_source.R&quot;)</code></pre>
 <div id="source-code" class="section level1">
 <h1>Source Code</h1>
 <p>See <a href="https://github.com/poworoznek/sparse_bayesian_infinite_factor_models" class="uri">https://github.com/poworoznek/sparse_bayesian_infinite_factor_models</a> for code to run all chunks in this demo.</p>
@@ -277,8 +289,7 @@ y = X%*%beta_true + diag(X%*%Omega_true%*%t(X)) +  rnorm(n,0.5)</code></pre>
 </div>
 <div id="regression-example" class="section level1">
 <h1>Regression Example</h1>
-<pre class="r"><code>source(&quot;regint_DL_last.R&quot;)
-nrun = 5000; burn = 4000; thin = 1; k = 6
+<pre class="r"><code>nrun = 5000; burn = 4000; thin = 1; k = 6
 gibbs = gibbs_DL(y, X ,nrun, burn, thin = 1, 
                delta_rw = 0.04, epsilon_rw = 0.5,
                a = 1, k = k)</code></pre>

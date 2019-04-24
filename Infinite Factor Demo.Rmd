@@ -11,7 +11,7 @@ output:
 ---
 
 
-```{r include = FALSE}
+```{r message=FALSE}
 library(tidyverse)
 library(bayesSurv)
 library(GIGrvg)
@@ -20,12 +20,9 @@ library(MCMCpack)
 library(reshape2)
 library(ggplot2)
 library(latex2exp)
-source("generate_DL_reg.R")
-source("clustalignplus.R")
-source("permsignfact.R")
-source("signer.R")
-source("permuter.R")
-source("mcrotfact.R")
+library(psych)
+library(parallel)
+source("https://raw.githubusercontent.com/poworoznek/sparse_bayesian_infinite_factor_models/master/demo_source.R")
 ```
 
 # Source Code
@@ -128,7 +125,6 @@ generate_DL_reg(S = 5000, k = 10, p = 20,
 
 
 ```{r cache=TRUE}
-source("regint_DL_last.R")
 nrun = 5000; burn = 4000; thin = 1; k = 6
 gibbs = gibbs_DL(y, X ,nrun, burn, thin = 1, 
                delta_rw = 0.04, epsilon_rw = 0.5,
