@@ -21,13 +21,16 @@ library(reshape2)
 library(ggplot2)
 library(latex2exp)
 source("generate_DL_reg.R")
-source("regint.R")
 source("clustalignplus.R")
 source("permsignfact.R")
 source("signer.R")
 source("permuter.R")
 source("mcrotfact.R")
 ```
+
+# Source Code
+
+See https://github.com/poworoznek/sparse_bayesian_infinite_factor_models for code to run all chunks in this demo.
 
 # Generate the data
 

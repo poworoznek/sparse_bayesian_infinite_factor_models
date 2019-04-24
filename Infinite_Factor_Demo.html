@@ -73,7 +73,9 @@ h6 {
 </style>
 
 
+</head>
 
+<body>
 
 <style type="text/css">
 .main-container {
@@ -98,82 +100,21 @@ img {
 button.code-folding-btn:focus {
   outline: none;
 }
-summary {
-  display: list-item;
-}
 </style>
 
 
+
+<div class="container-fluid main-container">
 
 <!-- tabsets -->
-
-<style type="text/css">
-.tabset-dropdown > .nav-tabs {
-  display: inline-table;
-  max-height: 500px;
-  min-height: 44px;
-  overflow-y: auto;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.tabset-dropdown > .nav-tabs > li.active:before {
-  content: "";
-  font-family: 'Glyphicons Halflings';
-  display: inline-block;
-  padding: 10px;
-  border-right: 1px solid #ddd;
-}
-
-.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
-  content: "";
-  border: none;
-}
-
-.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
-  content: "";
-  font-family: 'Glyphicons Halflings';
-  display: inline-block;
-  padding: 10px;
-  border-right: 1px solid #ddd;
-}
-
-.tabset-dropdown > .nav-tabs > li.active {
-  display: block;
-}
-
-.tabset-dropdown > .nav-tabs > li > a,
-.tabset-dropdown > .nav-tabs > li > a:focus,
-.tabset-dropdown > .nav-tabs > li > a:hover {
-  border: none;
-  display: inline-block;
-  border-radius: 4px;
-}
-
-.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
-  display: block;
-  float: none;
-}
-
-.tabset-dropdown > .nav-tabs > li {
-  display: none;
-}
-</style>
-
 <script>
 $(document).ready(function () {
   window.buildTabsets("TOC");
 });
-
-$(document).ready(function () {
-  $('.tabset-dropdown > .nav-tabs > li').click(function () {
-    $(this).parent().toggleClass('nav-tabs-open')
-  });
-});
 </script>
 
 <!-- code folding -->
+
 
 
 
@@ -262,16 +203,6 @@ div.tocify {
 
 </style>
 
-
-
-</head>
-
-<body>
-
-
-<div class="container-fluid main-container">
-
-
 <!-- setup 3col/9col grid for toc_float and main content  -->
 <div class="row-fluid">
 <div class="col-xs-12 col-sm-4 col-md-3">
@@ -289,12 +220,16 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Factor for INteractions (FIN) and Postprocessing</h1>
-<h4 class="author">Federico Ferrari and Evan Poworoznek</h4>
-<h4 class="date">4/11/2019</h4>
+<h4 class="author"><em>Federico Ferrari and Evan Poworoznek</em></h4>
+<h4 class="date"><em>4/11/2019</em></h4>
 
 </div>
 
 
+<div id="source-code" class="section level1">
+<h1>Source Code</h1>
+<p>See <a href="https://github.com/poworoznek/sparse_bayesian_infinite_factor_models" class="uri">https://github.com/poworoznek/sparse_bayesian_infinite_factor_models</a> for code to run all chunks in this demo.</p>
+</div>
 <div id="generate-the-data" class="section level1">
 <h1>Generate the data</h1>
 <p>In our simulated study, we observe three families of chemicals, that show high correlation within each family. We assume that the chemicals assume a latent representation of 5 factors. Let <span class="math inline">\(X_i = (x_{i1},\cdots,x_{ip})\)</span> denote a vector of exposure measurements, we have <span class="math display">\[X_i = \Lambda \eta_i+ \epsilon_i,   \quad  \epsilon_i \sim N_p(0,\Psi),\]</span> where <span class="math inline">\(\Lambda\)</span> is the factor loadings matrix and <span class="math inline">\(\Psi\)</span> a diagonal matrix. In the next plot we show the simulated <span class="math inline">\(p \times k\)</span> matrix of factor loadings <span class="math inline">\(\Lambda\)</span>. In particular, there are <span class="math inline">\(3\)</span> “active” latent factors, each influencing one family of chemicals, and <span class="math inline">\(2\)</span> noise factors.</p>
