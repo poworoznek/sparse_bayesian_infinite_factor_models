@@ -2,7 +2,6 @@
 title: "Factor for INteractions (FIN) and Postprocessing"
 author: "Federico Ferrari and Evan Poworoznek"
 date: "4/11/2019"
-bibliography: Bib.bib
 output: 
    html_document:
     toc: true
@@ -11,7 +10,7 @@ output:
 ---
 
 
-```{r message=FALSE}
+```{r setup, message=FALSE}
 library(tidyverse)
 library(bayesSurv)
 library(GIGrvg)
@@ -27,15 +26,15 @@ source("https://raw.githubusercontent.com/poworoznek/sparse_bayesian_infinite_fa
 
 # Source Code
 
-See https://github.com/poworoznek/sparse_bayesian_infinite_factor_models for code to run all chunks in this demo.
+See https://github.com/poworoznek/sparse_bayesian_infinite_factor_models (Infinite Factor Demo.Rmd) for code to run all chunks in this demo.
 
 # Generate the data
 
-In our simulated study, we observe three families of chemicals, that show high correlation within each family. We assume that the chemicals assume a latent representation of 5 factors. Let $X_i = (x_{i1},\cdots,x_{ip})$ denote a vector of exposure measurements, we have
+In our simulated study, we observe three families of chemicals that show high correlation within each family. We assume that the chemicals assume a latent representation of 5 factors. Let $X_i = (x_{i1},\cdots,x_{ip})$ denote a vector of exposure measurements, we have
 $$X_i = \Lambda \eta_i+ \epsilon_i,   \quad  \epsilon_i \sim N_p(0,\Psi),$$
 where $\Lambda$ is the factor loadings matrix and $\Psi$ a diagonal matrix. In the next plot we show the simulated $p \times k$ matrix of factor loadings $\Lambda$. In particular, there are $3$ "active" latent factors, each influencing one family of chemicals, and $2$ noise factors.
 
-```{r}
+```{r sample_lambda}
 set.seed(1)
 k0 = 5
 p = 20
@@ -50,7 +49,7 @@ lambda[,4] = rnorm(p, 0, 0.5)
 lambda[,5] = rnorm(p, 0, 0.5)
 ```
 
-```{r, echo=FALSE}
+```{r, plot_lambda, echo=FALSE}
 longlambda = melt(lambda)
 ggplot(longlambda, aes(x = Var2, y = Var1)) + 
   geom_tile(aes(fill=value), colour="grey20") + 
@@ -71,7 +70,7 @@ ggplot(longlambda, aes(x = Var2, y = Var1)) +
 
 Now we generate the outcome according to a linear regression with pairwise interactions. We assume that the first family has a positive effect on the health response and the second family has a negative effect. We add some interactions between the chemicals within and between families. 
 
-```{r}
+```{r simulate_X}
 n = 500;
 X = matrix(rnorm(n*k0),n,k0)%*%t(lambda) + bayesSurv::rMVNorm(n,Sigma = 3*diag(p))
 
@@ -92,7 +91,7 @@ $$y_i = \eta_i^T \omega + \eta_i^T \Omega \eta_i +\epsilon_{y,i},  \quad \epsilo
  X_i = \Lambda \eta_i+ \epsilon_i,   \quad  \epsilon_i \sim N_p(0,\Psi), \quad \eta_i \sim N_k(0,I),$$
 where $\Psi = diag(\sigma_1^2,\cdots, \sigma_p^2)$ We can $3^{rd}$show that induced regression of $X_i$ on $y_i$ is indeed a quadratic regression, i.e. :
 $$E(y_i | X_i) = tr (\Omega V)+(\omega^T A) X_i + X_i^T (A^T \Omega A) X_i$$ 
-where $V = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1}$ and $A = V \Lambda^T \Psi^{-1}  = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1} \Lambda^T \Psi^{-1}$. Several priors have been proposed for the $p \times k$ factor loadings matrix $\Lambda$, including priors that allow the number of factors to be equal to $+ \infty$ [@Bhattacharya2013,@legramanti2019bayesian]. We choose the Dirichlet-Laplace (DL) prior of [@Bhattacharya2015] row-wise for $\Lambda$, corresponding to
+where $V = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1}$ and $A = V \Lambda^T \Psi^{-1}  = (\Lambda^T \Psi^{-1} \Lambda + I)^{-1} \Lambda^T \Psi^{-1}$. Several priors have been proposed for the $p \times k$ factor loadings matrix $\Lambda$, including priors that allow the number of factors to be equal to $+ \infty$ [Bhattacharya and Dunson, 2013][Legramanti et al., 2019]. We choose the Dirichlet-Laplace (DL) prior of [Bhattacharya et al., 2015] row-wise for $\Lambda$, corresponding to
 $$\lambda_{j,h} | \phi_j, \tau_j \sim DE(\phi_{j,h} \tau_j) \quad h = 1, \cdots, k  \\
 \phi_j \sim Dir(a,\cdots,a) \quad \tau_j \sim Gamma(k a , 1/2),
 $$
@@ -104,7 +103,7 @@ FIN can be generalized to allow for higher order interactions, allowing increasi
 
 
 
-```{r}
+```{r plot_low_k}
 generate_DL_reg(S = 5000, k = 5, p = 20,
                 a_DL = 0.5, var_omega = 5,
                 as = 1, bs = 0.3,
@@ -112,7 +111,7 @@ generate_DL_reg(S = 5000, k = 5, p = 20,
 ```
 
 
-```{r, echo = FALSE}
+```{r plot_high_k, echo = FALSE}
 generate_DL_reg(S = 5000, k = 10, p = 20,
                 a_DL = 0.5, var_omega = 5,
                 as = 1, bs = 0.3,
@@ -124,7 +123,7 @@ generate_DL_reg(S = 5000, k = 10, p = 20,
 # Regression Example 
 
 
-```{r cache=TRUE}
+```{r sample_posterior, cache=TRUE}
 nrun = 5000; burn = 4000; thin = 1; k = 6
 gibbs = gibbs_DL(y, X ,nrun, burn, thin = 1, 
                delta_rw = 0.04, epsilon_rw = 0.5,
@@ -132,7 +131,7 @@ gibbs = gibbs_DL(y, X ,nrun, burn, thin = 1,
 
 ```
 
-```{r, echo=FALSE}
+```{r plot_omega, echo=FALSE}
 # check results, some plotting
 beta_hat = apply(gibbs$beta_bayes, 2, mean)
 Omega_hat = apply(gibbs$Omega_bayes, c(2,3), mean)
@@ -168,7 +167,7 @@ ggplot(ggdf, aes(x = Var2, y = Var1)) +
 
 # Postprocessing
 
-Our resulting samples of the factor loadings matrix are not directly summarizable. The original model statement allows post-multiplication of an arbitrary orthogonal matrix and the factor loadings matrix $\Lambda$ without affecting the identifiable elements $V$ and $A$. Because of this, we can think of our posterior as a massively multimodal hypersurface and our sampler can travel between modes as it pleases, and without constraints we see the same sorts of issues as in standard Gaussian Mixture Modeling. Enforcing constraints like a triangular $\Lambda$ can massively limit the class of matrices $V$ and $A$ estmiable by the method.
+Our resulting samples of the factor loadings matrix are not directly summarizable. The original model statement allows post-multiplication of an arbitrary orthogonal matrix and the factor loadings matrix $\Lambda$ without affecting the identifiable elements $V$ and $A$. Because of this, we can think of our posterior as a massively multimodal hypersurface and our sampler can travel between modes as it pleases, and without constraints we see the same sorts of issues as in standard Gaussian Mixture Modeling. Enforcing constraints like a triangular $\Lambda$ can massively limit the class of matrices $V$ and $A$ estimable by the method.
 
 To avoid enforcing constraints on the model we instead rely on post processing to return the samples of $\Lambda$ to a summarizable form. The forms by which samples of $\Lambda$ can change throughout the Markov Chain fall into three categories: Rotational Ambiguity, Label Switching, and Sign Ambiguity.
 
@@ -178,7 +177,7 @@ For columnwise Label Switching we introduce a method that clusters the norms of 
 
 For Sign Ambiguity we augment the Label Switching method to now minimize the previously defined loss over the set of all column permutations crossed with the set of all column sign switches. The resultant solution set has cardinality $k!2^km$, and by utilizing the clustering we largely reduce the $m$ term.
 
-```{r}
+```{r align_samples}
 lambda_sample = gibbs$Lambda
 lambda_sample = lapply(1:1000, function(ind) lambda_sample[ind,,])
 sample_mean = reduce(lambda_sample, `+`)/length(lambda_sample)
@@ -186,7 +185,7 @@ rotated = mcrotfact(lambda_sample, method = "varimax", file = FALSE)
 aligned = clustalignplus(rotated$samples, itermax = 500)
 ```
 
-```{r, echo=FALSE}
+```{r plot_alignment, echo=FALSE}
 label = "Sample Mean"
 SampleMean = cbind(melt(sample_mean), label)
 label = "Rotated Sample Mean"
@@ -212,4 +211,8 @@ ggplot(ggdf, aes(x = Var2, y = Var1)) +
   labs(fill = " ")
 ```
 
+Bhattacharya, A., and D. B. Dunson. 2011. “Sparse Bayesian Infinite Factor Models.” Biometrika, 291–306. doi:10.1093/biomet/asr013.
 
+Bhattacharya, Anirban Krishna, Debdeep Pati, Natesh S. Pillai, and David B. Dunson. 2015. “Dirichlet-Laplace Priors for Optimal Shrinkage.” Journal of the American Statistical Association 110 512: 1479–90.
+
+Legramanti, Sirio, Daniele Durante, and David B Dunson. 2019. “Bayesian Cumulative Shrinkage for Infinite Factorizations.” arXiv Preprint arXiv:1902.04349.
