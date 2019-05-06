@@ -77,7 +77,7 @@ lambda.switch = lapply(1:10000, function(ind){
 })
 difflist.switch = lapply(lambda.switch, `-`, pivot)
 norms.switch = sapply(difflist.switch, norm, type = "2")
-plot(density(norms.switch), main = "SVD norms with label-swithcing")
+plot(density(norms.switch), main = "SVD norms with label-switching")
 ```
 
 Samples that share the labeling of the pivot sample are found in the lowest cluster, and higher clusters represent samples for which labels have switched. Switches of labels of columns with similar differences can result in similar norm values, so these higher clusters do not necessarily represent a single permutation of the original pivot labels. In the above example the higher cluster represents both the column permutations performed. To separate these higher clusters, the method is applied recursively, and a new pivot sample is chosen from the higher clusters, and the norms are reclustered to find separation among the labelings in those smaller sets of samples. At each iteration as the lower cluster of samples aligned with the current pivot is identified, the remaining number of label switches present in the samples is reduced. Once each sample is matched with a pivot sample, the clusters can be permuted together to align with the original pivot.

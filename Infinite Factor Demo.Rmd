@@ -11,6 +11,7 @@ output:
 
 
 ```{r setup, message=FALSE}
+# to install packages run: install.packages(c("tidyverse", "bayesSurv", "GIGrvg", "statmod", "MCMCpack", "reshape2", "ggplot2", "latex2exp", "psych"))
 library(tidyverse)
 library(bayesSurv)
 library(GIGrvg)
