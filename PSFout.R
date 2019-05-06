@@ -7,7 +7,10 @@
 #            stop: stopping criterion, largest reasonable norm for an aligned cluster mean
 #            itermax: maximum number of permutations to search, can be larger than vector memory
 
-permsignfact = function(lambda, pivot, stop, itermax = 100000){
+source("permuter.R")
+source("signer.R")
+
+PSFout = function(lambda, pivot, stop, itermax = 100000){
   k = ncol(lambda[[1]])
   p = nrow(lambda[[1]])
   m = length(lambda)
@@ -34,13 +37,11 @@ permsignfact = function(lambda, pivot, stop, itermax = 100000){
   if(i == itermax) {
     print(paste("permsignfact itermax of", i, "reached"))
     print(minperm * minsign)
-    aligned = lapply(lambda, function(mat) t(t(mat[,minperm]) * minsign))
-    return(aligned)
+    return(rep(list(minperm * minsign), m))
   }
   
-  aligned = lapply(lambda, function(mat) t(t(mat[,perm]) * sign))
   print("cluster successfully permuted")
   print(perm * sign)
-  return(aligned)
+  return(rep(list(perm * sign), m))
 }
 
