@@ -11,7 +11,6 @@ permsignfact = function(lambda, pivot, stop, itermax = 100000){
   k = ncol(lambda[[1]])
   p = nrow(lambda[[1]])
   m = length(lambda)
-  lamarray = unlist(lambda) %>% array(c(p, k, m))
   first = Reduce("+", lambda)/length(lambda)             # align median of cluster samples to the pivot
   k = ncol(first)
   
