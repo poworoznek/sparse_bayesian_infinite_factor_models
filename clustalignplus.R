@@ -25,7 +25,7 @@ clustalignplus = function(lambda, method = "multipivot", initialpivot = NULL,
   
   difflist = lapply(lambda, `-`, pivot)
   norms = sapply(difflist, norm, type = "2")             # norm differences between samples and a pivot (svd)
-  norms[which.min(norms)] = min(norms[norms>1e-4])       # deal with pivot norm of 0
+  norms[which.min(norms)] = min(norms[-(which.min(norms))])       # deal with pivot norm of 0
   
   clusters = kmeans(norms, 2, nstart = 1)$cluster        # cluster samples based on norm 
   
@@ -37,7 +37,7 @@ clustalignplus = function(lambda, method = "multipivot", initialpivot = NULL,
     stop = mean(norms[clusters==lower]) + sd(norms[clusters==lower])
   }
   
-  if(var(norms)/4 <= var(norms[clusters==baseCluster])){  # if only one cluster likely, align
+  if(var(norms)/3 <= var(norms[clusters==baseCluster])){  # if only one cluster likely, align
     return(permsignfact(lambda = lambda, pivot = initialpivot, 
                     stop = stop, itermax = itermax))
   } else {                                               # if more than one cluster, reapply clustalign

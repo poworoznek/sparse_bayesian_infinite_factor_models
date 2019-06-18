@@ -4,7 +4,7 @@
 #            p: permutation / sign output from  CAPout
 
 applier = function(l, p){
-  return(mapply(function(vec, perm){
-    return(vec[,abs(perm)] * sign(perm))
+  return(mapply(function(mat, perm){
+    return(t(t(mat[,abs(perm)]) * sign(perm)))
   }, l, p, SIMPLIFY = FALSE))
 }
