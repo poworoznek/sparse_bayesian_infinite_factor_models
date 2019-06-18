@@ -27,7 +27,7 @@ factalign = function(lambda, rotation = "varimax", match = TRUE,
       if(rerun > 1) for(i in 2:rerun) aligned = clustalignmatch(aligned)
     } else {
       aligned = mclapply(rotated$samples, matchsignfact, 
-                         rotated$samples[[round(length(rotated$samples/2))]],
+                         rotated$samples[[round(length(rotated$samples)/2)]],
                          mc.cores = ncores, mc.preschedule = TRUE)
     }
   } else {
