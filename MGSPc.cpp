@@ -34,15 +34,15 @@ Rcpp::List MGSPsamp(int p, int n, int k,
   bool sig = Rcpp::any(Rcpp::in(ss, output)).is_true();
   bool nfa = Rcpp::any(Rcpp::in(nf, output)).is_true();
   
-  sp -= 1;
   mat COVMEAN;
   cube OMEGA, SIGMA;
-  Rcpp::List LAMBDA;
+  field<mat> LAMBDA;
   vec K(sp);
   
   if(covm) COVMEAN = zeros<mat>(p, p);
   if(cov) OMEGA = zeros<cube>(p, p, sp);
   if(sig) SIGMA = zeros<cube>(p, p, sp);
+  if(fac) LAMBDA = field<mat>(sp);
   if(nfa) vec K = zeros<vec>(sp);
   int ind = 0;
   
@@ -159,11 +159,11 @@ Rcpp::List MGSPsamp(int p, int n, int k,
     }
     
     thincheck = i - std::floor(i/thin) * thin; // % operator stolen by arma
-    if(!thincheck && (i > burn)) {
-      Omega = (Lambda * Lambda.t() + Sigma) % scaleMat;
+    if(!thincheck && (i >= burn)) {
+      if(covm || cov) Omega = (Lambda * Lambda.t() + Sigma) % scaleMat;
       if(covm) COVMEAN += Omega / std::max(sp+1, 1);
       if(cov) OMEGA.slice(ind) = Omega;
-      if(fac) LAMBDA[ind] = Lambda;
+      if(fac) LAMBDA(ind) = Lambda;
       if(sig) SIGMA.slice(ind) = Sigma;
       if(nfa) K(ind) = k;
       ind += 1;
@@ -171,7 +171,7 @@ Rcpp::List MGSPsamp(int p, int n, int k,
     
     printcheck = (start+1) % 1000;
     if(!printcheck && verbose){
-      cout << (start+1) << endl;
+      Rcpp::Rcout << (start+1) << "\n";
     }
   }
   
