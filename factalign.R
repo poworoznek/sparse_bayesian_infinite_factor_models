@@ -1,7 +1,7 @@
 # Solve rotational ambiguity in factor loadings
 # Variety of methods
 
-# ARGUMENTS: lambda: List of samples
+# ARGUMENTS: lambda: List of factor loadings matrix samples
 #            rotation: Method for rotation: one of c("varimax", "BADFM")
 #            match: Logical. Use greedy matching?
 #            cluster: Logical. Use greedy clustering?
@@ -24,7 +24,10 @@ factalign = function(lambda, rotation = "varimax", match = TRUE,
   if(match){
     if(cluster){
       aligned = clustalignmatch(rotated$samples)
-      if(rerun > 1) for(i in 2:rerun) aligned = clustalignmatch(aligned)
+      if(rerun > 1) {for(i in 2:rerun) {
+        aligned = clustalignmatch(aligned)
+        print(paste(i," / ", rerun))
+      }}
     } else {
       aligned = mclapply(rotated$samples, matchsignfact, 
                          rotated$samples[[round(length(rotated$samples)/2)]],
@@ -32,7 +35,7 @@ factalign = function(lambda, rotation = "varimax", match = TRUE,
     }
   } else {
     if(cluster){
-      prealign = lapply(rotated$samples[1:5], matchsignfact, 
+      prealign = lapply(rotated$samples[1:10], matchsignfact, 
                         rotated$samples[[1]])
       diff = lapply(prealign, "-", rotated$samples[[1]])
       stop = max(sapply(diff, norm, "2"))
@@ -42,7 +45,13 @@ factalign = function(lambda, rotation = "varimax", match = TRUE,
                                                                stop = stop, 
                                                                itermax = itermax)
     } else {
-      stop("must use clustering or matching")
+      prealign = lapply(rotated$samples[1:10], matchsignfact, 
+                        rotated$samples[[1]])
+      diff = lapply(prealign, "-", rotated$samples[[1]])
+      stop = max(sapply(diff, norm, "2"))
+      aligned = mclapply(rotated$samples, permsignfact, 
+                         rotated$samples[[round(length(rotated$samples)/2)]],
+                         stop, itermax, mc.cores = ncores, mc.preschedule = TRUE)
     }
   }
   return(aligned)

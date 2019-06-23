@@ -184,9 +184,48 @@ library(gridExtra)
 
 
 grid.arrange(plotmat(sample_mean, color = "green"), plotmat(rotmean, color = "green"),
-             plotmat(Reduce(`+`, aligned)/length(aligned), color = "green"), ncol = 3)
+             plotmat(Reduce(`+`, al3)/length(aligned), color = "green"), ncol = 3)
 
 grid.arrange(plotmat(lvar, color = "green"), 
-             plotmat(rotated$samples[[1200]], color = "green"),
+             plotmat(lambda_bayes[[1200]], color = "green"),
              plotmat(rotated$samples[[9000]], color = "green"),
              ncol = 3)
+
+omeg = Reduce("+", lapply(lambda_bayes, tcrossprod))
+omeg=omeg/10000
+
+om1 = tcrossprod(sample_mean)
+om2 = tcrossprod(rotmean)
+om3 = tcrossprod(Reduce(`+`, try)/length(try))
+
+norm(omeg-om1)
+norm(omeg-om2)
+norm(omeg-om3)
+
+aligned2l = readRDS("~/downloads/PRAsim.Rds")
+a2lmean = Reduce("+", aligned2l)/10000
+om4 =  tcrossprod(a2lmean)
+norm(omeg-om4)
+
+someg = scale(omeg)
+
+norm(someg-scale(om1))
+norm(someg-scale(om2))
+norm(someg-scale(om3))
+norm(someg-scale(om4))
+
+grid.arrange(plotmat(lvar, color = "green"), 
+             plotmat(Reduce(`+`, al3)/length(aligned), color = "green"),
+             plotmat(matchsignfact(a2lmean, lambda), color = "green"),
+             ncol = 3)
+
+load("~/Documents/factorR/msfWorkspace.RData")
+library(parallel)
+Rcpp::sourceCpp("msf.cpp")
+system.time({try = mclapply(rep(rotated$samples, 50), msf, rotated$samples[[10]], mc.preschedule = TRUE, mc.cores = 6)})
+
+
+
+
+
+

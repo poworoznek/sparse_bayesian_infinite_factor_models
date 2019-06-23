@@ -2,7 +2,7 @@
 # called from clustalign
 # svd loss
 
-# ARGUMENTS: lambda: list of factor samples
+# ARGUMENTS: lambda: list of factor samples or single sample
 #            pivot: matrix to align permutation to
 #            stop: stopping criterion, largest reasonable norm for an aligned cluster mean
 #            itermax: maximum number of permutations to search, can be larger than vector memory
@@ -11,7 +11,8 @@ permsignfact = function(lambda, pivot, stop, itermax = 100000){
   k = ncol(lambda[[1]])
   p = nrow(lambda[[1]])
   m = length(lambda)
-  first = Reduce("+", lambda)/length(lambda)             # align median of cluster samples to the pivot
+  if(class(lambda)=="list") {first = Reduce("+", lambda)/length(lambda)}
+    else {first = lambda}                                                   # align median of cluster samples to the pivot
   k = ncol(first)
   
   i = 1
@@ -34,11 +35,19 @@ permsignfact = function(lambda, pivot, stop, itermax = 100000){
   if(i == itermax) {
     print(paste("permsignfact itermax of", i, "reached"))
     print(minperm * minsign)
-    aligned = lapply(lambda, function(mat) t(t(mat[,minperm]) * minsign))
+    if(class(lambda)=="list") {
+      aligned = lapply(lambda, function(mat) t(t(mat[,minperm]) * minsign))
+    } else {
+      aligned = t(t(lambda[,minperm]) * minsign)
+    }
     return(aligned)
   }
   
-  aligned = lapply(lambda, function(mat) t(t(mat[,perm]) * sign))
+  if(class(lambda)=="list") {
+    aligned = lapply(lambda, function(mat) t(t(mat[,perm]) * sign))
+  } else {
+    aligned = t(t(lambda[,perm]) * sign)
+  }
   print("cluster successfully permuted")
   print(perm * sign)
   return(aligned)
