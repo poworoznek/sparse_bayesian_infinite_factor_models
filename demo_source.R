@@ -198,7 +198,7 @@ gibbs_DL = function(y, X ,nrun, burn, thin = 1,
     sigmasq_y = 1/rgamma(1,an,bn)
     
     # --- Update Lambda --- #
-    Plam = psijh*(phijh^2)*matrix(rep(tau^2,k),p,k,byrow=F)
+    Plam = (psijh*(phijh^2)*matrix(rep(tau^2,k),p,k,byrow=F)
     eta2 = eta.T%*%eta
     zlams = rnorm(k*p, sd = 1)       # generate normal draws all at once 
     
