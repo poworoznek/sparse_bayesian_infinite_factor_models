@@ -60,7 +60,7 @@ for(i in seq(2, 8000,  by = 100)){
   rot.image =  c(rot.image, rot.add)
 }
 rot.animated = image_animate(rot.image, fps = 20, dispose = "background")
-image_write(rot.animated, "RotatedLambdaAnimation.gif")
+image_write(rot.animated, "rot.gif")
 
 
 fmean = Reduce("+", fact)
@@ -83,3 +83,15 @@ image(t(fmean))
 
 lambda = array(unlist(vmrotated$samples), dim = c(100,10,8000))
 plot(lambda[10,10,], pch = ".")
+
+frames = image_graph(width = 600, height = 600)
+
+walk(1000:1100, ~{
+  print(plotmat(lambda_bayes[[.x]], "green"))
+})
+
+dev.off()
+
+ttry = image_animate(frames, fps = 5)
+
+image_write(ttry, "raw.gif")
