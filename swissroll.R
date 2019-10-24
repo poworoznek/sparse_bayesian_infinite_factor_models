@@ -19,3 +19,18 @@ dat = cbind(x, y, z)
 k = apply(dat, 1, function(X){
   apply(dat, 1, kern, X, 0.1)
 })
+
+range(k)
+
+eig = eigen(k)
+
+lambda = lm(phi ~ eig$vectors[,1:3])
+
+summary(lambda)
+
+wrong = lm(phi ~ x + y + z)
+
+summary(wrong)
+
+
+
