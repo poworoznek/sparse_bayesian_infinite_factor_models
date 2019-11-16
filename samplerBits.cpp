@@ -164,7 +164,8 @@ Rcpp::NumericMatrix phi_dl(mat lambda, double a, int k, int p){
 Rcpp::NumericMatrix plm_dl(mat psi, mat phi, vec tau){
   // --- UPDATE Plam --- //
   mat prod = psi % square(phi);
-  return Rcpp::wrap(prod.each_col() % square(tau));
+  mat prod2 = prod.each_col() % square(tau);
+  return Rcpp::wrap(pow(prod2,1));
 }
 
 // [[Rcpp::export]]
@@ -205,25 +206,61 @@ Rcpp::NumericMatrix eta_int(mat lambda, mat eta, vec ps, vec phi, mat Psi,
 }
 
 // [[Rcpp::export]]
-Rcpp::NumericVector psi_int(mat eta, vec y, vec phi, double ssy, int k, int n){
+// Rcpp::NumericVector psi_int(mat eta, vec y, vec phi, double ssy, int k, int n){
+//   mat etacopy = eta;
+//   mat Xreg(n, k*(k-1)/2 + k);
+//   int aug = k;
+//   int ind = 0;
+//   for(int i=0;i<k;++i){
+//     Xreg.cols(ind, ind + aug - 1) = eta.each_col() % eta.col(0);
+//     eta.shed_col(0);
+//     ind += aug;
+//     aug -= 1;
+//   }
+//   mat ln = Xreg.t() * Xreg / ssy;
+//   ln.diag() += 1;
+//   mat s = inv(trimatu(chol(ln)));
+//   mat v = s * s.t();
+//   vec m = v * Xreg.t() * (y - etacopy * phi) / ssy;
+//   vec csi = m + (randn<rowvec>(k*(k-1)/2 + k) * s.t()).t();
+//   return Rcpp::wrap(csi);
+// }
+
+
+Rcpp::NumericMatrix psi_int(mat eta, vec y, vec phi, double ssy, int k, int n){
   mat etacopy = eta;
-  mat Xreg(n, k*(k-1)/2 + k);
-  int aug = k;
-  int ind = 0;
-  for(int i=0;i<k;++i){
-    Xreg.cols(ind, ind + aug - 1) = eta.each_col() % eta.col(0);
+  mat Xreg = square(eta);
+  for(int i=0;i<(k-1);++i){
+    mat add = eta.each_col() % eta.col(0);
+    add.shed_col(0);
+    Xreg.insert_cols(Xreg.n_cols, add);
     eta.shed_col(0);
-    ind += aug;
-    aug -= 1;
   }
+  
   mat ln = Xreg.t() * Xreg / ssy;
   ln.diag() += 1;
   mat s = inv(trimatu(chol(ln)));
   mat v = s * s.t();
   vec m = v * Xreg.t() * (y - etacopy * phi) / ssy;
   vec csi = m + (randn<rowvec>(k*(k-1)/2 + k) * s.t()).t();
-  return Rcpp::wrap(csi);
+  
+  mat psi(k, k, fill::zeros);
+  int ind = k;
+  for(int j=0; j<(k-1); ++j){
+    for(int i=(j+1); i<k; ++i){
+      psi(i, j) = csi(ind) / 2;
+      ind +=1;
+    }
+  }
+  
+  psi += psi.t();
+  psi.diag() = csi.subvec(0,k-1);
+  
+  if(k==1){psi(0,0) = csi(0);}
+  
+  return Rcpp::wrap(psi);
 }
+
 
 // [[Rcpp::export]]
 Rcpp::NumericVector phi_int(mat eta, vec y, double ssy, mat psi, int k){

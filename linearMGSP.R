@@ -18,7 +18,9 @@
 #            sigfilename: optional filename for sigma matrix samples;
 
 linearMGSP = function(Y, nrun, burn, thin = 1, prop = 1, epsilon = 1e-3,
-                      kinit = NULL, adapt = TRUE, output = "covMean", 
+                      kinit = NULL, adapt = TRUE, output = c("covMean", "covSamples", 
+                                                             "factSamples", "sigSamples", 
+                                                             "numFactors"), 
                       covfilename = "Omega.rds", factfilename = "Lambda.rds", 
                       sigfilename = "Sigma.rds", verbose = TRUE,
                       dump = FALSE, buffer = 10000){
@@ -116,7 +118,7 @@ linearMGSP = function(Y, nrun, burn, thin = 1, prop = 1, epsilon = 1e-3,
     }
     
     if((i %% thin == 0) & (i > burn)) {
-      if(cm | cs) Omega = (tcrossprod(Lambda) + diag(1/ps)) * scaleMat
+      if(cm | cs) Omega = (tcrossprod(Lambda) + diag(1/c(ps))) * scaleMat
       if(cm) COVMEAN = COVMEAN + Omega / sp
       if(cs) OMEGA[,,ind] = Omega
       if(fs) LAMBDA[[ind]] = Lambda

@@ -16,7 +16,9 @@
 #            sigfilename: optional filename for sigma matrix samples;
 
 linearDL = function(Y, nrun, burn, thin = 1, prop = 1, epsilon = 1e-3,
-                      kinit = NULL, output = "covMean", 
+                      kinit = NULL, output = c("covMean", "covSamples", 
+                                               "factSamples", "sigSamples", 
+                                               "numFactors"), 
                       covfilename = "Omega.rds", factfilename = "Lambda.rds", 
                       sigfilename = "Sigma.rds", verbose = TRUE,
                       dump = FALSE, buffer = 10000){
@@ -80,7 +82,7 @@ linearDL = function(Y, nrun, burn, thin = 1, prop = 1, epsilon = 1e-3,
     
     
     if((i %% thin == 0) & (i > burn)) {
-      if(cm | cs) Omega = (tcrossprod(lambda) + diag(1/ps)) * scaleMat
+      if(cm | cs) Omega = (tcrossprod(lambda) + diag(1/c(ps))) * scaleMat
       if(cm) COVMEAN = COVMEAN + Omega / sp
       if(cs) OMEGA[,,ind] = Omega
       if(fs) LAMBDA[[ind]] = lambda
