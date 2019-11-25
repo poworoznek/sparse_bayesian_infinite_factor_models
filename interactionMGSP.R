@@ -18,9 +18,11 @@
 #                   will adapt during burn in and not after
 
 interactionMGSP = function(y, X, nrun, burn, thin = 1, delta_rw = 0.0526749, epsilon_rw = 0.5,
-                         a = 1/2, kinit = NULL, output = "covMean",  covfilename = "Omega.rds",
+                         a = 1/2, kinit = NULL, output = c("covMean", "covSamples", "factSamples",
+                                                           "sigSamples", "coefSamples", "numFactors",
+                                                           "errSamples"),  covfilename = "Omega.rds",
                          factfilename = "Lambda.rds",  sigfilename = "Sigma.rds", verbose = TRUE,
-                         dump = FALSE, buffer = 10000, adapt = TRUE){
+                         dump = FALSE, buffer = 10000, adapt = "burn"){
   
   cm = any(output %in% "covMean")
   cs = any(output %in% "covSamples")
@@ -33,9 +35,17 @@ interactionMGSP = function(y, X, nrun, burn, thin = 1, delta_rw = 0.0526749, eps
   p = ncol(X)
   n = nrow(y)
   
-  a = 1/2
-  as = 1
-  bs = 0.3
+  as = 1                          # gamma hyperparameters for residual precision
+  bs = 0.3                        
+  df = 3                          # gamma hyperparameters for t_{ij}
+  ad1 = 2.1
+  bd1 = 1                         # gamma hyperparameters for delta_1
+  ad2 = 3.1
+  bd2 = 1                         # gamma hyperparameters delta_h, h >= 2
+  adf = 1
+  bdf = 1 
+  b0 = 1
+  b1 = 0.0005
   
   if(is.null(kinit)) kinit = floor(log(p)*3)
   
@@ -68,7 +78,7 @@ interactionMGSP = function(y, X, nrun, burn, thin = 1, delta_rw = 0.0526749, eps
     PSI = array(dim = c(k, k, sp))
     INTERCEPT = numeric(sp)
     MAIN = array(dim = c(p, sp))
-    INTERACT = array(dim = c(p, p, sp))
+    INTERACTION = array(dim = c(p, p, sp))
   }
   if(nf) K = numeric(sp)
   if(es) SSY = numeric(sp)
@@ -82,15 +92,15 @@ interactionMGSP = function(y, X, nrun, burn, thin = 1, delta_rw = 0.0526749, eps
   
   for(i in 1:nrun){
     eta = eta_int(lambda, eta, ps, phi, Psi, k, n, y, X, ssy, delta_rw, acp)
-    Psi = build_Psi(psi_int(eta, y, phi, ssy, k, n), k)
+    Psi = psi_int(eta, y, phi, ssy, k, n)
     phi = phi_int(eta, y, ssy, Psi, k)
     ssy = ssy_int(eta, phi, Psi, y, n)
-    psiMG = psi_mg(Lambda, tau, ps, k, p, df)
-    delta = del_mg(Lambda, psiMG, tau, delta, k, p, ad1, bd1, ad2, bd2)
+    psiMG = psi_mg(lambda, tau, ps, k, p, df)
+    delta = del_mg(lambda, psiMG, tau, delta, k, p, ad1, bd1, ad2, bd2)
     tau = cumprod(delta)
     Plam = plm_mg(psiMG, tau)
     lambda = lam_lin(eta, Plam, ps, k, p, X)
-    ps = sig_lin(lambda, eta, k, p, n, X, as, bs)
+    ps = c(sig_lin(lambda, eta, k, p, n, X, as, bs))
     
     if((i %% thin == 0) & (i > burn)) {
       if(cm | cs) Omega = (tcrossprod(lambda) + diag(1/ps)) * scaleMat

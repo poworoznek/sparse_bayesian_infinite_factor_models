@@ -22,7 +22,7 @@ interactionDL = function(y, X, nrun, burn = 0, thin = 1, delta_rw = 0.0526749, e
                                                            "sigSamples", "coefSamples", "numFactors", 
                                                            "errSamples"),  covfilename = "Omega.rds",
                          factfilename = "Lambda.rds",  sigfilename = "Sigma.rds", verbose = TRUE,
-                         dump = FALSE, buffer = 10000, adapt = TRUE){
+                         dump = FALSE, buffer = 10000, adapt = "burn"){
   
   cm = any(output %in% "covMean")
   cs = any(output %in% "covSamples")
@@ -35,7 +35,6 @@ interactionDL = function(y, X, nrun, burn = 0, thin = 1, delta_rw = 0.0526749, e
   p = ncol(X)
   n = nrow(y)
   
-  a = 1/2
   as = 1
   bs = 0.3
   
@@ -57,12 +56,12 @@ interactionDL = function(y, X, nrun, burn = 0, thin = 1, delta_rw = 0.0526749, e
   
   tau = rgamma(p,p*a,1/2)
   psiDL = matrix(rexp(p*k,1/2),p,k)
-  phiDL = matrix(0,p,k)
+  phiDL = matrix(rnorm(p*k),p,k)
   for(j in 1:p){
     gam = rgamma(k, a)
     phiDL[j,] = gam /sum(gam)
   }
-  Plam = psiDL*(phiDL^2)*matrix(rep(tau^2,k),p,k,byrow=F)
+  Plam = 1/psiDL*(phiDL^2)*matrix(rep(tau^2,k),p,k,byrow=F)
   
   if(cm) COVMEAN = matrix(0, nrow = p, ncol = p)
   if(cs) OMEGA = array(dim = c(p, p, sp))
@@ -87,15 +86,15 @@ interactionDL = function(y, X, nrun, burn = 0, thin = 1, delta_rw = 0.0526749, e
   
   for(i in 1:nrun){
     eta = eta_int(lambda, eta, ps, phi, Psi, k, n, y, X, ssy, delta_rw, acp)
-    Psi = build_Psi(psi_int(eta, y, phi, ssy, k, n), k)
-    phi = phi_int(eta, y, ssy, Psi, k)
+    Psi = psi_int(eta, y, phi, ssy, k, n)
+    phi = c(phi_int(eta, y, ssy, Psi, k))
     ssy = ssy_int(eta, phi, Psi, y, n)
     Plam = plm_dl(psiDL, phiDL, tau)
     lambda = lam_lin(eta, Plam, ps, k, p, X)
     psiDL = psi_dl(lambda, phiDL, tau)
-    tau = tau_dl(lambda, phiDL, k, p)
+    tau = c(tau_dl(lambda, phiDL, k, p))
     phiDL = phi_dl(lambda, a, k, p)
-    ps = sig_lin(lambda, eta, k, p, n, X, as, bs)
+    ps = c(sig_lin(lambda, eta, k, p, n, X, as, bs))
     
     if((i %% thin == 0) & (i > burn)) {
       if(cm | cs) Omega = (tcrossprod(lambda) + diag(1/ps)) * scaleMat
@@ -104,16 +103,25 @@ interactionDL = function(y, X, nrun, burn = 0, thin = 1, delta_rw = 0.0526749, e
       if(fs) LAMBDA[[ind]] = lambda
       if(ss) SIGMA[,ind] = 1/ps
       if(cf) {
-        ps = as.vector(ps)
-        V_n = solve(t(lambda/ps)%*% lambda+diag(k))
-        a_n = V_n %*% t(lambda/ps)
+        SigmaI = diag(ps)
+        Lambda.T = t(lambda)
+        V_n = solve(Lambda.T%*%SigmaI%*%lambda+diag(k))
+        a_n = V_n%*%Lambda.T%*%SigmaI
         dsVX = diag(sqrt(VX))
         dsVX_inv = diag(1/sqrt(VX))
+        INTERACTION[,,ind] = dsVX_inv%*%t(a_n)%*%Psi%*%a_n%*%dsVX_inv
+        MAIN[,ind] = as.vector(t(phi)%*%a_n)
+        INTERCEPT[ind] = sum(diag(Psi%*%V_n))
+        # ps = as.vector(ps)
+        # V_n = solve(t(lambda/ps)%*% lambda+diag(k))
+        # a_n = V_n %*% t(lambda/ps)
+        # dsVX = diag(sqrt(VX))
+        # dsVX_inv = diag(1/sqrt(VX))
         PHI[,ind] = phi
         PSI[,,ind] = Psi
-        INTERCEPT[ind] = sum(diag(Psi%*%V_n))
-        MAIN[,ind] = as.vector(t(phi)%*%a_n)
-        INTERACTION[,,ind] = dsVX_inv%*%t(a_n)%*%Psi%*%a_n%*%dsVX_inv
+        # INTERCEPT[ind] = sum(diag(Psi%*%V_n))
+        # MAIN[,ind] = as.vector(t(phi)%*%a_n)
+        # INTERACTION[,,ind] = dsVX_inv%*%t(a_n)%*%Psi%*%a_n%*%dsVX_inv
       }
       if(nf) K[ind] = k
       if(es) SSY[ind] = ssy

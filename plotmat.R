@@ -1,6 +1,8 @@
 # plot a matrix with a nice color scheme
+library(reshape2)
 
-plotmat = function(mat, color = "red", title = NULL){
+plotmat = function(mat, color = "green", title = NULL){
+  mat = apply(mat, 2, rev)
   longmat = melt(mat)
   
   p = ggplot(longmat, aes(x = Var2, y = Var1)) + 

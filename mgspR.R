@@ -1,7 +1,8 @@
 # Gibbs sampler for factorized covariance estimation
 # using mgps prior on factor loadings from Battacharya Dunson (2011)
-# prior edits informed by Durante (2017)
+# prior hyperparameters informed by Durante (2017)
 # version for adaptive number of factors weighted by iteration
+# see github.com/poworoznek
 
 # ARGUMENTS: Y: Data matrix (n x p); 
 #            prop: proportion of elements in each column less than epsilon in magnitude cutoff;
@@ -16,11 +17,14 @@
 #            factfilename: optional filename for factor matrix samples;
 #            sigfilename: optional filename for sigma matrix samples;
 #            verbose: logical. print sample checkpoints?
+#            adapt: logical. Adapt k across samples?
 
-safefact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1, 
-                    kinit = NULL, output = "covMean", 
+mgspR = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1, 
+                    kinit = NULL, output = c("covMean", "covSamples", 
+                                             "factSamples", "sigSamples",
+                                             "numFactors"), 
                     covfilename = "Omega.rds", factfilename = "Lambda.rds", 
-                    sigfilename = "Sigma.rds", verbose = TRUE){
+                    sigfilename = "Sigma.rds", verbose = TRUE, adapt = TRUE){
   
   p = ncol(Y)
   n = nrow(Y)
@@ -100,7 +104,7 @@ safefact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     #------Update psi_{jh}'s------#
     psijh = matrix(rgamma(p*k,
                           df/2 + 0.5,
-                          df/2 + t(t(Lambda)^2 * (tauh))),
+                          df/2 + t(t(Lambda)^2 * (tauh))/2),
                    nrow = p, ncol = k)
     
     #------Update theta & tauh------#
@@ -133,7 +137,7 @@ safefact = function(Y, prop = 1, epsilon = 1e-3, nrun, burn, thin = 1,
     vec = lind >= prop
     num = sum(vec)                             # number of redundant columns
     
-    if(uu < prob) {
+    if((uu < prob) & adapt) {
       if((i > 20) & (num == 0) & all(lind < 0.995)) {
         k = k + 1
         Lambda = cbind(Lambda, rep(0,p))
