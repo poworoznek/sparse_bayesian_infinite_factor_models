@@ -2,7 +2,7 @@
 # using mgps prior on factor loadings from Battacharya Dunson (2011)
 # prior hyperparameters informed by Durante (2017)
 # version for adaptive number of factors weighted by iteration
-# see github.com/poworoznek
+# see https://github.com/poworoznek/sparse_bayesian_infinite_factor_models for license
 
 # ARGUMENTS: Y: Data matrix (n x p); 
 #            prop: proportion of elements in each column less than epsilon in magnitude cutoff;
